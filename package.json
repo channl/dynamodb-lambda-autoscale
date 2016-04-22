@@ -1,0 +1,38 @@
+{
+  "name": "DynamoDBAutoscaleLambda",
+  "version": "0.1.0",
+  "description": "Autoscale DynamoDB using AWS Lambda",
+  "main": "index.js",
+  "scripts": {
+    "build": "babel src -d lib",
+    "start": "node ./scripts/start.js"
+  },
+  "author": "tmitchel2 <tmitchel2@googlemail.com>",
+  "license": "MIT",
+  "dependencies": {
+    "aws-sdk": "^2.3.5",
+    "babel-polyfill": "^6.7.4",
+    "measured": "^1.1.0",
+    "winston": "^2.2.0"
+  },
+  "devDependencies": {
+    "babel": "^6.5.2",
+    "babel-cli": "^6.7.7",
+    "babel-preset-react-native": "^1.5.7"
+  },
+  "keywords": [
+    "dynamoDB",
+    "autoscale",
+    "dynamic",
+    "aws",
+    "lambda"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/tmitchel2/DynamoDBAutoscaleLambda.git"
+  },
+  "bugs": {
+    "url": "https://github.com/tmitchel2/DynamoDBAutoscaleLambda/issues"
+  },
+  "homepage": "https://github.com/tmitchel2/DynamoDBAutoscaleLambda"
+}
