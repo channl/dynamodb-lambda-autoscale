@@ -1,20 +1,24 @@
-var lambda = require('../lib/index.js');
+try {
+  var lambda = require('../lib/index.js');
 
-var context = {
-  succeed: function(data) {
-    try {
-      if (data) {
-        console.log(JSON.stringify(data));
+  var context = {
+    succeed: function(data) {
+      try {
+        if (data) {
+          console.log(JSON.stringify(data));
+        }
+      } catch (e) {
+        console.error(e);
       }
-    } catch (e) {
+    },
+    fail: function(e) {
       console.error(e);
     }
-  },
-  fail: function(e) {
-    console.error(e);
-  }
-};
+  };
 
-var event = {};
+  var event = {};
+  lambda.handler(event, context);
 
-lambda.handler(event, context);
+} catch (e) {
+  console.error(e);
+}

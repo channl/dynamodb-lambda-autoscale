@@ -15,6 +15,10 @@ export default class Stats {
     this._stats.metrics = {};
   }
 
+  toJSON() {
+    return this._stats.toJSON();
+  }
+
   getSummaries() {
     let statsData = this._stats.toJSON();
     let statsSummary = Object
@@ -36,9 +40,7 @@ export default class Stats {
     });
 
     let nameLen = Math.max.apply(Math, statsSummary.map(i => i.name.length));
-    let statsAsStrings = statsSummary
-      .map(s => this.padRight(s.name, nameLen + 2) + this.padRight(s.mean + 'ms', 10) + ' ' + s.count);
-      //.reduce((pre, cur) => pre === '' ? cur : pre + '\n' + cur, '');
+    let statsAsStrings = statsSummary.map(s => this.padRight(s.name, nameLen + 2) + this.padRight(s.mean + 'ms', 10) + ' ' + s.count);
     return statsAsStrings;
   };
 

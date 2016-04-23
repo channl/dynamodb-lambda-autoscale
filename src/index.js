@@ -10,32 +10,45 @@ const {
 
 export let handler = async (event, context) => {
   try {
-    logger.debug('*** LAMBDA START ***');
+    logger.info('*** LAMBDA START ***');
 
+    debugger;
     let db = new DynamoDB(config.connection.dynamoDB, config.connection.cloudWatch);
     let tables = await db.listTablesAsync();
     let capacityTasks = tables
       .TableNames
       .map(async tableName => {
 
-        logger.debug('Getting table description', tableName);
+        logger.info('Getting table description', tableName);
         let tableDescription = await db.describeTableAsync({TableName: tableName});
-        logger.debug(JSON.stringify({tableDescription}));
-        logger.debug('Getting table consumed capacity description', tableName);
-        let consumedCapacityTableDescription = await db.describeTableConsumedCapacityAsync(tableDescription.Table);
-        logger.debug(JSON.stringify({consumedCapacityTableDescription}));
+        logger.info(JSON.stringify({tableDescription}));
 
-        logger.debug('Getting table update request', tableName);
-        let tableUpdateRequest = await config.getTableUpdateAsync(tableDescription, consumedCapacityTableDescription);
+        // Log the monthlyEstimatedCost
+        debugger;
+        let totalTableProvisionedThroughput = db.getTotalTableProvisionedThroughput(tableDescription);
+        let monthlyEstimatedCost = db.getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
+        stats.counter('DynamoDB.monthlyEstimatedCost').inc(monthlyEstimatedCost);
+
+        logger.info('Getting table consumed capacity description', tableName);
+        let consumedCapacityTableDescription = await db.describeTableConsumedCapacityAsync(tableDescription.Table);
+        logger.info(JSON.stringify({consumedCapacityTableDescription}));
+
+        logger.info('Getting table update request', tableName);
+        let tableUpdateRequest = config.getTableUpdate(tableDescription, consumedCapacityTableDescription);
         if (tableUpdateRequest) {
-          logger.debug('Updating table', tableName);
-          logger.debug(JSON.stringify({tableUpdateRequest}));
+          logger.info('Updating table', tableName);
+          logger.info(JSON.stringify({tableUpdateRequest}));
           await db.updateTableAsync(tableUpdateRequest);
-          logger.debug('Updated table', tableName);
+          logger.info('Updated table', tableName);
         }
       });
 
     await Promise.all(capacityTasks);
+
+    // Log stats
+    let st = new Stats(stats);
+    logger.info(JSON.stringify(st.toJSON()));
+    st.reset();
 
     // Return an empty response
     let response = null;
@@ -46,7 +59,7 @@ export let handler = async (event, context) => {
     }
 
   } catch (e) {
-    logger.crit(e);
+    logger.error(e);
     if (context) {
       context.fail(e);
     } else {
@@ -54,9 +67,6 @@ export let handler = async (event, context) => {
     }
 
   } finally {
-    let st = new Stats(stats);
-    st.getSummaries().forEach(s => logger.debug('METRIC', s));
-    st.reset();
-    logger.debug('*** LAMBDA FINISH ***');
+    logger.info('*** LAMBDA FINISH ***');
   }
 };

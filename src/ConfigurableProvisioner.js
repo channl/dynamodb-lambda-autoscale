@@ -12,47 +12,56 @@ class ConfigurableProvisioner {
     this.capacityCalculator = new CapacityCalculator();
   }
 
-  async getTableUpdateAsync(tableDescription, tableConsumedCapacityDescription) {
-    let provisionedThroughput = this.getProvisionedThroughput(
-      tableDescription.Table.ProvisionedThroughput,
-      tableConsumedCapacityDescription.Table.ConsumedThroughput,
-      tableDescription.Table.TableName);
+  getTableUpdate(tableDescription, tableConsumedCapacityDescription) {
+    try {
+      logger.debug('ConfigurableProvisioner.getTableUpdate (start)');
 
-    let gsis = tableDescription.Table.GlobalSecondaryIndexes || [];
-    let globalSecondaryIndexUpdates = gsis
-      .map(gsi => {
-        let gsicc = tableConsumedCapacityDescription.Table.GlobalSecondaryIndexes.find(i => i.IndexName === gsi.IndexName);
-        let provisionedThroughput = this.getProvisionedThroughput(gsi.ProvisionedThroughput, gsicc.ConsumedThroughput, tableDescription.Table.TableName, gsicc.IndexName);
-        if (!provisionedThroughput) {
-          return null;
-        }
+      let provisionedThroughput = this.getProvisionedThroughput(
+        tableDescription.Table.ProvisionedThroughput,
+        tableConsumedCapacityDescription.Table.ConsumedThroughput,
+        tableDescription.Table.TableName);
 
-        return {
-          Update: {
-            IndexName: gsi.IndexName,
-            ProvisionedThroughput: provisionedThroughput
+      let gsis = tableDescription.Table.GlobalSecondaryIndexes || [];
+      let globalSecondaryIndexUpdates = gsis
+        .map(gsi => {
+          let gsicc = tableConsumedCapacityDescription.Table.GlobalSecondaryIndexes.find(i => i.IndexName === gsi.IndexName);
+          let provisionedThroughput = this.getProvisionedThroughput(gsi.ProvisionedThroughput, gsicc.ConsumedThroughput, tableDescription.Table.TableName, gsicc.IndexName);
+          if (provisionedThroughput == null) {
+            return null;
           }
-        };
-      })
-      .filter(i => i != null);
 
-    if (!provisionedThroughput && (globalSecondaryIndexUpdates ==null || globalSecondaryIndexUpdates.length === 0)) {
-      return null;
+          return {
+            Update: {
+              IndexName: gsi.IndexName,
+              ProvisionedThroughput: provisionedThroughput
+            }
+          };
+        })
+        .filter(i => i != null);
+
+      if (!provisionedThroughput && (globalSecondaryIndexUpdates ==null || globalSecondaryIndexUpdates.length === 0)) {
+        return null;
+      }
+
+      let result = {
+        TableName: tableDescription.Table.TableName
+      };
+
+      if (provisionedThroughput) {
+        result.ProvisionedThroughput = provisionedThroughput;
+      }
+
+      if (globalSecondaryIndexUpdates && globalSecondaryIndexUpdates.length > 0) {
+        result.GlobalSecondaryIndexUpdates = globalSecondaryIndexUpdates;
+      }
+
+      return result;
+    } catch (e) {
+      logger.warn('ConfigurableProvisioner.getTableUpdate (error)');
+      logger.error(e);
+    } finally {
+      logger.debug('ConfigurableProvisioner.getTableUpdate (complete)');
     }
-
-    let result = {
-      TableName: tableDescription.Table.TableName
-    };
-
-    if (provisionedThroughput) {
-      result.ProvisionedThroughput = provisionedThroughput;
-    }
-
-    if (globalSecondaryIndexUpdates && globalSecondaryIndexUpdates.length > 0) {
-      result.GlobalSecondaryIndexUpdates = globalSecondaryIndexUpdates;
-    }
-
-    return result;
   }
 
   parseDate(value) {

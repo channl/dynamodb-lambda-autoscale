@@ -86,6 +86,34 @@ export default class DynamoDB {
     }
   }
 
+  getTotalTableProvisionedThroughput(params) {
+    let ReadCapacityUnits = params.Table.ProvisionedThroughput.ReadCapacityUnits;
+    let WriteCapacityUnits = params.Table.ProvisionedThroughput.WriteCapacityUnits;
+
+    if (params.Table.GlobalSecondaryIndexes) {
+      ReadCapacityUnits += params.Table.GlobalSecondaryIndexes.reduce((prev, curr, i) => prev + curr.ProvisionedThroughput.ReadCapacityUnits, 0);
+      WriteCapacityUnits += params.Table.GlobalSecondaryIndexes.reduce((prev, curr, i) => prev + curr.ProvisionedThroughput.WriteCapacityUnits, 0);
+    }
+
+    return {
+      ReadCapacityUnits,
+      WriteCapacityUnits
+    };
+  }
+
+  getMonthlyEstimatedTableCost(provisionedThroughput) {
+    const averageHoursPerMonth = 720;
+    const readCostPerHour = 0.0065;
+    const readCostUnits = 50;
+    const writeCostPerHour = 0.0065;
+    const writeCostUnits = 10;
+
+    let readCost = provisionedThroughput.ReadCapacityUnits / readCostUnits * readCostPerHour * averageHoursPerMonth;
+    let writeCost = provisionedThroughput.WriteCapacityUnits / writeCostUnits * writeCostPerHour * averageHoursPerMonth;
+
+    return readCost + writeCost;
+  }
+
   getArrayOrDefault(value) {
     return value || [];
   }

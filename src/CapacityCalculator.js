@@ -19,7 +19,7 @@ class CapacityCalculator {
     if (rate < lowerThsd) {
       let newCapa = Math.max(Math.round(capa - (capa * (decreseAmt / 100))), min);
       let nextAllowedDecrementDate = this.getNextAllowedDecrementDate(lastDecrease, decreasesToday);
-      let isDecrementAllowed = nextAllowedDecrementDate > Date.now();
+      let isDecrementAllowed = nextAllowedDecrementDate <= this.getNowDate();
       // logger.debug('Next decrement allowed at ' + nextAllowedDecrementDate.toString());
 
       if (newCapa !== capa && !isDecrementAllowed) {
