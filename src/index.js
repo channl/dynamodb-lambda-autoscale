@@ -12,7 +12,6 @@ export let handler = async (event, context) => {
   try {
     logger.info('*** LAMBDA START ***');
 
-    debugger;
     let db = new DynamoDB(config.connection.dynamoDB, config.connection.cloudWatch);
     let tables = await db.listTablesAsync();
     let capacityTasks = tables
@@ -24,7 +23,6 @@ export let handler = async (event, context) => {
         logger.info(JSON.stringify({tableDescription}));
 
         // Log the monthlyEstimatedCost
-        debugger;
         let totalTableProvisionedThroughput = db.getTotalTableProvisionedThroughput(tableDescription);
         let monthlyEstimatedCost = db.getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
         stats.counter('DynamoDB.monthlyEstimatedCost').inc(monthlyEstimatedCost);
