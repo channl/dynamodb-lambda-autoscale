@@ -28,7 +28,7 @@ export let handler = async (event, context) => {
         stats.counter('DynamoDB.monthlyEstimatedCost').inc(monthlyEstimatedCost);
 
         logger.info('Getting table consumed capacity description', tableName);
-        let consumedCapacityTableDescription = await db.describeTableConsumedCapacityAsync(tableDescription.Table);
+        let consumedCapacityTableDescription = await db.describeTableConsumedCapacityAsync(tableDescription.Table, 1);
         logger.info(JSON.stringify({consumedCapacityTableDescription}));
 
         logger.info('Getting table update request', tableName);

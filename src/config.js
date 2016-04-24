@@ -1,28 +1,38 @@
 import ConfigurableProvisioner from './ConfigurableProvisioner';
+import RateLimitedDecrement from './RateLimitedDecrement';
+import Throughput from './Throughput';
 
 const provisioner = new ConfigurableProvisioner ({
   readCapacity: {
-    min: 1,
-    max: 10,
     increment: {
-      threshold: { percent: 90 },
-      adjustment: { percent: 100 },
+      isAdjustmentRequired: data => Throughput.getReadCapacityUtilisationPercent(data) > 90,
+      calculateValue: data => {
+        debugger;
+        const adjustmentPercent = 100;
+        const max = 10;
+        const min = 1;
+        return Throughput.getPercentAdjustedReadCapacityUnits(adjustmentPercent, max, min);
+      },
     },
     decrement: {
-      threshold: { percent: 30 },
-      adjustment: { percent: 30 },
+      isAdjustmentRequired: data => Throughput.getReadCapacityUtilisationPercent(data) < 30 && RateLimitedDecrement.isDecrementAllowed(data),
+      calculateValue: data => Math.max(data.ConsumedThroughput.ReadCapacityUnits, 1),
     }
   },
   writeCapacity: {
-    min: 1,
-    max: 10,
     increment: {
-      threshold: { percent: 90 },
-      adjustment: { percent: 100 },
+      isAdjustmentRequired: data => Throughput.getWriteCapacityUtilisationPercent(data) > 90,
+      calculateValue: data => {
+        const adjustmentPercent = 100;
+        const maxValue = 10;
+        const max = 10;
+        const min = 1;
+        return Throughput.getPercentAdjustedWriteCapacityUnits(adjustmentPercent, maxValue);
+      },
     },
     decrement: {
-      threshold: { percent: 30 },
-      adjustment: { percent: 30 },
+      isAdjustmentRequired: data => Throughput.getWriteCapacityUtilisationPercent(data) < 30 && RateLimitedDecrement.isDecrementAllowed(data),
+      calculateValue: data => Math.max(data.ConsumedThroughput.WriteCapacityUnits, 1),
     }
   }
 });
@@ -45,7 +55,7 @@ const config = {
       }
     }
   },
-  getTableUpdate: (desc, capDesc) => provisioner.getTableUpdate(desc, capDesc)
+  getTableUpdate: (description, consumedCapacityDescription) => provisioner.getTableUpdate(description, consumedCapacityDescription)
 };
 
 export default config;

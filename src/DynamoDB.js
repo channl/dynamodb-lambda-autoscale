@@ -10,7 +10,6 @@ export default class DynamoDB {
   constructor(dynamoOptions, cloudWatchOptions) {
     this._db = new AWS.DynamoDB(dynamoOptions);
     this._cw = new CloudWatch(cloudWatchOptions);
-    this._timeframeMinutes = 5;
   }
 
   async listTablesAsync() {
@@ -43,14 +42,14 @@ export default class DynamoDB {
     }
   }
 
-  async describeTableConsumedCapacityAsync(params) {
+  async describeTableConsumedCapacityAsync(params, periodMinutes) {
     let sw = stats.timer('DynamoDB.describeTableConsumedCapacityAsync').start();
     try {
       // Make all the requests concurrently
-      let tableRead = this.getConsumedCapacityAsync(true, params.TableName, null);
-      let tableWrite = this.getConsumedCapacityAsync(false, params.TableName, null);
-      let gsiReads = this.getArrayOrDefault(params.GlobalSecondaryIndexes).map(gsi => this.getConsumedCapacityAsync(true, params.TableName, gsi.IndexName));
-      let gsiWrites = this.getArrayOrDefault(params.GlobalSecondaryIndexes).map(gsi => this.getConsumedCapacityAsync(true, params.TableName, gsi.IndexName));
+      let tableRead = this.getConsumedCapacityAsync(true, params.TableName, null, periodMinutes);
+      let tableWrite = this.getConsumedCapacityAsync(false, params.TableName, null, periodMinutes);
+      let gsiReads = this.getArrayOrDefault(params.GlobalSecondaryIndexes).map(gsi => this.getConsumedCapacityAsync(true, params.TableName, gsi.IndexName, periodMinutes));
+      let gsiWrites = this.getArrayOrDefault(params.GlobalSecondaryIndexes).map(gsi => this.getConsumedCapacityAsync(true, params.TableName, gsi.IndexName, periodMinutes));
 
       // Await on the results
       let tableConsumedRead = await tableRead;
@@ -122,10 +121,10 @@ export default class DynamoDB {
     return data.data.Datapoints.length === 0 ? 0 : data.data.Datapoints[0].Average;
   }
 
-  async getConsumedCapacityAsync(isRead, tableName, globalSecondaryIndexName) {
+  async getConsumedCapacityAsync(isRead, tableName, globalSecondaryIndexName, periodMinutes) {
     let EndTime = new Date();
     let StartTime = new Date();
-    StartTime.setTime(EndTime - (60000 * this._timeframeMinutes));
+    StartTime.setTime(EndTime - (60000 * periodMinutes));
     let MetricName = isRead ? 'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
     let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
     let params = {
@@ -134,7 +133,7 @@ export default class DynamoDB {
         Dimensions,
         StartTime,
         EndTime,
-        Period: (this._timeframeMinutes * 60),
+        Period: (periodMinutes * 60),
         Statistics: [ 'Average' ],
         Unit: 'Count'
     };
