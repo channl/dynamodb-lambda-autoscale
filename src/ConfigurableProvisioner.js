@@ -73,7 +73,6 @@ class ConfigurableProvisioner {
   }
 
   getUpdatedProvisionedThroughput(params) {
-    debugger;
     let newProvisionedThroughput = {
       ReadCapacityUnits: params.ProvisionedThroughput.ReadCapacityUnits,
       WriteCapacityUnits: params.ProvisionedThroughput.WriteCapacityUnits

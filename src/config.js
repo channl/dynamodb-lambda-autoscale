@@ -7,7 +7,6 @@ const provisioner = new ConfigurableProvisioner ({
     increment: {
       isAdjustmentRequired: data => Throughput.getReadCapacityUtilisationPercent(data) > 90,
       calculateValue: data => {
-        debugger;
         const adjustmentPercent = 100;
         const max = 10;
         const min = 1;
