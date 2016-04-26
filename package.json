@@ -6,20 +6,34 @@
   "scripts": {
     "build": "babel src -d lib",
     "start": "node ./scripts/start.js",
-    "debug": "node-debug ./scripts/start.js"
+    "debug": "node-debug ./scripts/start.js",
+    "build-dev": "webpack --config webpack-dev.config.js --progress --profile --colors",
+    "build-prod": "webpack --config webpack-prod.config.js --progress --profile --colors",
+    "dist": "gulp dist"
   },
   "author": "tmitchel2 <tmitchel2@googlemail.com>",
   "license": "MIT",
   "dependencies": {
-    "aws-sdk": "^2.3.5",
-    "babel-polyfill": "^6.7.4",
-    "measured": "^1.1.0",
+    "dotenv": "^2.0.0",
     "winston": "^2.2.0"
   },
   "devDependencies": {
+    "aws-sdk": "^2.3.5",
+    "babel-polyfill": "^6.7.4",
+    "measured": "^1.1.0",
     "babel": "^6.5.2",
     "babel-cli": "^6.7.7",
-    "babel-preset-react-native": "^1.5.7"
+    "babel-preset-react-native": "^1.5.7",
+    "webpack": "^1.13.0",
+    "babel-loader": "^6.2.4",
+    "del": "^2.2.0",
+    "gulp": "^3.9.1",
+    "gulp-install": "^0.6.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-uglify": "^1.5.3",
+    "gulp-zip": "^3.2.0",
+    "run-sequence": "^1.1.5",
+    "stats-webpack-plugin": "^0.3.1"
   },
   "keywords": [
     "dynamoDB",

@@ -1,5 +1,5 @@
 try {
-  var lambda = require('../lib/index.js');
+  var lambda = require('../build/index.js');
 
   var context = {
     succeed: function(data) {

@@ -1,5 +1,7 @@
 class RateLimitedDecrement {
 
+  // TODO dont allow decrement if its going to be really small change
+
   static isDecrementAllowed(data) {
     return this.getNextAllowedDecrementDate(data) <= this.getNowDate();
   }

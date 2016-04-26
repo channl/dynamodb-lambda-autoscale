@@ -10,7 +10,7 @@ const provisioner = new ConfigurableProvisioner ({
         const adjustmentPercent = 100;
         const max = 10;
         const min = 1;
-        return Throughput.getPercentAdjustedReadCapacityUnits(adjustmentPercent, max, min);
+        return Throughput.getPercentAdjustedReadCapacityUnits(data, adjustmentPercent, max, min);
       },
     },
     decrement: {
@@ -23,10 +23,9 @@ const provisioner = new ConfigurableProvisioner ({
       isAdjustmentRequired: data => Throughput.getWriteCapacityUtilisationPercent(data) > 90,
       calculateValue: data => {
         const adjustmentPercent = 100;
-        const maxValue = 10;
         const max = 10;
         const min = 1;
-        return Throughput.getPercentAdjustedWriteCapacityUnits(adjustmentPercent, maxValue);
+        return Throughput.getPercentAdjustedWriteCapacityUnits(data, adjustmentPercent, max, min);
       },
     },
     decrement: {

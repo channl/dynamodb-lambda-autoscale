@@ -52,24 +52,29 @@ class ConfigurableProvisioner {
   }
 
   getGlobalSecondaryIndexUpdate(tableDescription, tableConsumedCapacityDescription, gsi){
-    let gsicc = tableConsumedCapacityDescription.Table.GlobalSecondaryIndexes.find(i => i.IndexName === gsi.IndexName);
-    let provisionedThroughput = this.getUpdatedProvisionedThroughput({
-      TableName: tableDescription.Table.TableName,
-      IndexName: gsicc.IndexName,
-      ProvisionedThroughput: gsi.ProvisionedThroughput,
-      ConsumedThroughput: gsicc.ConsumedThroughput
-    });
+    try {
+      let gsicc = tableConsumedCapacityDescription.Table.GlobalSecondaryIndexes.find(i => i.IndexName === gsi.IndexName);
+      let provisionedThroughput = this.getUpdatedProvisionedThroughput({
+        TableName: tableDescription.Table.TableName,
+        IndexName: gsicc.IndexName,
+        ProvisionedThroughput: gsi.ProvisionedThroughput,
+        ConsumedThroughput: gsicc.ConsumedThroughput
+      });
 
-    if (provisionedThroughput == null) {
-      return null;
-    }
-
-    return {
-      Update: {
-        IndexName: gsi.IndexName,
-        ProvisionedThroughput: provisionedThroughput
+      if (provisionedThroughput == null) {
+        return null;
       }
-    };
+
+      return {
+        Update: {
+          IndexName: gsi.IndexName,
+          ProvisionedThroughput: provisionedThroughput
+        }
+      };
+    } catch (e) {
+      logger.warn('ConfigurableProvisioner.getGlobalSecondaryIndexUpdate (error)');
+      throw e;
+    }
   }
 
   getUpdatedProvisionedThroughput(params) {
