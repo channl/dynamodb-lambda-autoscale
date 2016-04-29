@@ -4,21 +4,19 @@
   "description": "Autoscale DynamoDB using AWS Lambda",
   "main": "index.js",
   "scripts": {
-    "build": "babel src -d lib",
     "start": "node ./scripts/start.js",
     "debug": "node-debug ./scripts/start.js",
-    "build-dev": "webpack --config webpack-dev.config.js --progress --profile --colors",
-    "build-prod": "webpack --config webpack-prod.config.js --progress --profile --colors",
-    "dist": "gulp dist"
+    "build": "gulp dist"
   },
   "author": "tmitchel2 <tmitchel2@googlemail.com>",
   "license": "MIT",
   "dependencies": {
-    "dotenv": "^2.0.0",
     "winston": "^2.2.0"
   },
   "devDependencies": {
-    "aws-sdk": "^2.3.5",
+    "aws-sdk-promise": "0.0.2",
+    "dotenv": "^2.0.0",
+    "aws-sdk": "2.2.48",
     "babel-polyfill": "^6.7.4",
     "measured": "^1.1.0",
     "babel": "^6.5.2",
@@ -33,6 +31,7 @@
     "gulp-uglify": "^1.5.3",
     "gulp-zip": "^3.2.0",
     "run-sequence": "^1.1.5",
+    "webpack-stream": "^3.2.0",
     "stats-webpack-plugin": "^0.3.1"
   },
   "keywords": [

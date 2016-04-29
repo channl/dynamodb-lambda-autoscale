@@ -7,6 +7,7 @@ var uglify = require('gulp-uglify');
 var AWS = require('aws-sdk');
 var fs = require('fs');
 var runSequence = require('run-sequence');
+var webpack = require('webpack-stream');
 
 // First we need to clean out the dist folder and remove the compiled zip file.
 gulp.task('clean', function(cb) {
@@ -14,14 +15,16 @@ gulp.task('clean', function(cb) {
   cb();
 });
 
-gulp.task("webpack", function (cb) {
-  cb();
+gulp.task("webpack", function () {
+  return gulp.src('src/index.js')
+  .pipe(webpack( require('./webpack-dev.config.js') ))
+  .pipe(gulp.dest('build/'));
 });
 
 // The js task could be replaced with gulp-coffee as desired.
 gulp.task("js", function () {
   return gulp
-    .src("build/lambdaMain.js")
+    .src("build/index.js")
     .pipe(gulp.dest("dist/"));
 });
 

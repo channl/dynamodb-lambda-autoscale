@@ -1,12 +1,38 @@
 class RateLimitedDecrement {
 
-  // TODO dont allow decrement if its going to be really small change
+  static isReadDecrementAllowed(data, calcNewValueFunc, minAdjustment, minGracePeriodAfterLastIncrementMinutes, minGracePeriodAfterLastDecrementMinutes) {
+    if (this.getNextAllowedDecrementDate(data, minGracePeriodAfterLastIncrementMinutes, minGracePeriodAfterLastDecrementMinutes) > this.getNowDate()) {
+      // Disallow if we havent crossed one of four time barriers
+      return false;
+    }
 
-  static isDecrementAllowed(data) {
-    return this.getNextAllowedDecrementDate(data) <= this.getNowDate();
+    let adjustment = data.ProvisionedThroughput.ReadCapacityUnits - calcNewValueFunc(data);
+    if (adjustment < minAdjustment && this.getNowDate().valueOf() < this.getLastAllowedDecrementDate().valueOf()) {
+      // Disallow if the adjustment is very small.  However, if we have crossed the last time
+      // barrier of the day then we might as well allow it.
+      return false;
+    }
+
+    return true;
   }
 
-  static getNextAllowedDecrementDate(data) {
+  static isWriteDecrementAllowed(data, calcNewValueFunc, minAdjustment, minGracePeriodAfterLastIncrementMinutes, minGracePeriodAfterLastDecrementMinutes) {
+    if (this.getNextAllowedDecrementDate(data, minGracePeriodAfterLastIncrementMinutes, minGracePeriodAfterLastDecrementMinutes) > this.getNowDate()) {
+      // Disallow if we havent crossed one of four time barriers
+      return false;
+    }
+
+    let adjustment = data.ProvisionedThroughput.WriteCapacityUnits - calcNewValueFunc(data);
+    if (adjustment < minAdjustment && this.getNowDate().valueOf() < this.getLastAllowedDecrementDate().valueOf()) {
+      // Disallow if the adjustment is very small.  However, if we have crossed the last time
+      // barrier of the day then we might as well allow it.
+      return false;
+    }
+
+    return true;
+  }
+
+  static getNextAllowedDecrementDate(data, minGracePeriodAfterLastIncrementMinutes, minGracePeriodAfterLastDecrementMinutes) {
     let lastDecrease = this.parseDate(data.ProvisionedThroughput.LastDecreaseDateTime);
 
     if (data.ProvisionedThroughput.NumberOfDecreasesToday >= 4) {
@@ -23,7 +49,15 @@ class RateLimitedDecrement {
     let periodMs2 = periodMs / (5 - data.ProvisionedThroughput.NumberOfDecreasesToday);
     let nextDecrementDate = this.getLastDecrementDate(lastDecrease);
     nextDecrementDate.setMilliseconds(nextDecrementDate.getMilliseconds() + periodMs2);
-    return nextDecrementDate;
+
+    // Handle grace periods
+    let withIncrementGracePeriod = this.parseDate(data.ProvisionedThroughput.LastIncreaseDateTime);
+    withIncrementGracePeriod.setMinutes(withIncrementGracePeriod.getMinutes() + minGracePeriodAfterLastIncrementMinutes);
+    let withDecrementGracePeriod = this.parseDate(data.ProvisionedThroughput.LastDecreaseDateTime);
+    withDecrementGracePeriod.setMinutes(withDecrementGracePeriod.getMinutes() + minGracePeriodAfterLastDecrementMinutes);
+
+    let result = new Date(Math.max(nextDecrementDate, withIncrementGracePeriod, withDecrementGracePeriod));
+    return result;
   }
 
   static getNowDate() {
@@ -58,7 +92,7 @@ class RateLimitedDecrement {
        return new Date(-8640000000000000);
     }
 
-    return Date.parse(value);
+    return new Date(Date.parse(value));
   }
 }
 

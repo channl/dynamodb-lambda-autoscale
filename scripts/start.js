@@ -1,6 +1,8 @@
 try {
   var lambda = require('../build/index.js');
 
+  process.chdir('./build');
+
   var context = {
     succeed: function(data) {
       try {

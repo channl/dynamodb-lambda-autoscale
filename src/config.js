@@ -5,31 +5,51 @@ import Throughput from './Throughput';
 const provisioner = new ConfigurableProvisioner ({
   readCapacity: {
     increment: {
-      isAdjustmentRequired: data => Throughput.getReadCapacityUtilisationPercent(data) > 90,
+      isAdjustmentRequired: (data, calcFunc) => Throughput.getReadCapacityUtilisationPercent(data) > 90,
       calculateValue: data => {
+        // adjustmentPercent or adjustmentUnits is used, which ever is bigger
         const adjustmentPercent = 100;
+        const adjustmentUnits = 3;
+        // min and max hard limits
         const max = 10;
         const min = 1;
-        return Throughput.getPercentAdjustedReadCapacityUnits(data, adjustmentPercent, max, min);
+        return Throughput.getPercentAdjustedReadCapacityUnits(data, adjustmentPercent, adjustmentUnits, max, min);
       },
     },
     decrement: {
-      isAdjustmentRequired: data => Throughput.getReadCapacityUtilisationPercent(data) < 30 && RateLimitedDecrement.isDecrementAllowed(data),
+      isAdjustmentRequired: (data, calcFunc) => {
+        // minimum possible downward adjustment, there is no point wasting 1 of 4 daily decrements on a small value
+        const minAdjustment = 3;
+        const minGracePeriodAfterLastIncrementMinutes = 60;
+        const minGracePeriodAfterLastDecrementMinutes = 60;
+        return Throughput.getReadCapacityUtilisationPercent(data) < 30
+          && RateLimitedDecrement.isReadDecrementAllowed(data, calcFunc, minAdjustment, minGracePeriodAfterLastIncrementMinutes, minGracePeriodAfterLastDecrementMinutes);
+      },
       calculateValue: data => Math.max(data.ConsumedThroughput.ReadCapacityUnits, 1),
     }
   },
   writeCapacity: {
     increment: {
-      isAdjustmentRequired: data => Throughput.getWriteCapacityUtilisationPercent(data) > 90,
+      isAdjustmentRequired: (data, calcFunc) => Throughput.getWriteCapacityUtilisationPercent(data) > 90,
       calculateValue: data => {
+        // adjustmentPercent or adjustmentUnits is used, which ever is bigger
         const adjustmentPercent = 100;
+        const adjustmentUnits = 3;
+        // min and max hard limits
         const max = 10;
         const min = 1;
-        return Throughput.getPercentAdjustedWriteCapacityUnits(data, adjustmentPercent, max, min);
+        return Throughput.getPercentAdjustedWriteCapacityUnits(data, adjustmentPercent, adjustmentUnits, max, min);
       },
     },
     decrement: {
-      isAdjustmentRequired: data => Throughput.getWriteCapacityUtilisationPercent(data) < 30 && RateLimitedDecrement.isDecrementAllowed(data),
+      isAdjustmentRequired: (data, calcFunc) => {
+        // minimum possible downward adjustment, there is no point wasting 1 of 4 daily decrements on a small value
+        const minAdjustment = 3;
+        const minGracePeriodAfterLastIncrementMinutes = 60;
+        const minGracePeriodAfterLastDecrementMinutes = 60;
+        return Throughput.getWriteCapacityUtilisationPercent(data) < 30
+          && RateLimitedDecrement.isWriteDecrementAllowed(data, calcFunc, minAdjustment, minGracePeriodAfterLastIncrementMinutes, minGracePeriodAfterLastDecrementMinutes)
+      },
       calculateValue: data => Math.max(data.ConsumedThroughput.WriteCapacityUnits, 1),
     }
   }

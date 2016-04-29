@@ -12,7 +12,7 @@ class ConfigurableProvisioner {
 
   getTableUpdate(tableDescription, tableConsumedCapacityDescription) {
     try {
-      logger.debug('ConfigurableProvisioner.getTableUpdate (start)');
+      logger.debug('ConfigurableProvisioner.getTableUpdate');
 
       let tableData = {
         TableName: tableDescription.Table.TableName,
@@ -44,15 +44,15 @@ class ConfigurableProvisioner {
 
       return result;
     } catch (e) {
-      logger.warn('ConfigurableProvisioner.getTableUpdate (error)');
+      logger.warn('ConfigurableProvisioner.getTableUpdate failed', JSON.stringify({tableDescription, tableConsumedCapacityDescription}));
       logger.error(e);
-    } finally {
-      logger.debug('ConfigurableProvisioner.getTableUpdate (complete)');
     }
   }
 
   getGlobalSecondaryIndexUpdate(tableDescription, tableConsumedCapacityDescription, gsi){
     try {
+      logger.debug('ConfigurableProvisioner.getGlobalSecondaryIndexUpdate');
+
       let gsicc = tableConsumedCapacityDescription.Table.GlobalSecondaryIndexes.find(i => i.IndexName === gsi.IndexName);
       let provisionedThroughput = this.getUpdatedProvisionedThroughput({
         TableName: tableDescription.Table.TableName,
@@ -72,37 +72,44 @@ class ConfigurableProvisioner {
         }
       };
     } catch (e) {
-      logger.warn('ConfigurableProvisioner.getGlobalSecondaryIndexUpdate (error)');
+      logger.warn('ConfigurableProvisioner.getGlobalSecondaryIndexUpdate failed', JSON.stringify({tableDescription, tableConsumedCapacityDescription, gsi}));
       throw e;
     }
   }
 
   getUpdatedProvisionedThroughput(params) {
-    let newProvisionedThroughput = {
-      ReadCapacityUnits: params.ProvisionedThroughput.ReadCapacityUnits,
-      WriteCapacityUnits: params.ProvisionedThroughput.WriteCapacityUnits
-    };
+    try {
+      logger.debug('ConfigurableProvisioner.getUpdatedProvisionedThroughput');
 
-    // Adjust read capacity
-    if (this.config.readCapacity.increment.isAdjustmentRequired(params)){
-      newProvisionedThroughput.ReadCapacityUnits = this.config.readCapacity.increment.calculateValue(params);
-    } else if (this.config.readCapacity.decrement.isAdjustmentRequired(params)) {
-      newProvisionedThroughput.ReadCapacityUnits = this.config.readCapacity.decrement.calculateValue(params);
+      let newProvisionedThroughput = {
+        ReadCapacityUnits: params.ProvisionedThroughput.ReadCapacityUnits,
+        WriteCapacityUnits: params.ProvisionedThroughput.WriteCapacityUnits
+      };
+
+      // Adjust read capacity
+      if (this.config.readCapacity.increment.isAdjustmentRequired(params, this.config.readCapacity.increment.calculateValue)){
+        newProvisionedThroughput.ReadCapacityUnits = this.config.readCapacity.increment.calculateValue(params);
+      } else if (this.config.readCapacity.decrement.isAdjustmentRequired(params, this.config.readCapacity.decrement.calculateValue)) {
+        newProvisionedThroughput.ReadCapacityUnits = this.config.readCapacity.decrement.calculateValue(params);
+      }
+
+      // Adjust write capacity
+      if (this.config.writeCapacity.increment.isAdjustmentRequired(params, this.config.writeCapacity.increment.calculateValue)){
+        newProvisionedThroughput.WriteCapacityUnits = this.config.writeCapacity.increment.calculateValue(params);
+      } else if (this.config.writeCapacity.decrement.isAdjustmentRequired(params, this.config.writeCapacity.decrement.calculateValue)) {
+        newProvisionedThroughput.WriteCapacityUnits = this.config.writeCapacity.decrement.calculateValue(params);
+      }
+
+      if (newProvisionedThroughput.ReadCapacityUnits === params.ProvisionedThroughput.ReadCapacityUnits
+        && newProvisionedThroughput.WriteCapacityUnits === params.ProvisionedThroughput.WriteCapacityUnits) {
+        return null;
+      }
+
+      return newProvisionedThroughput;
+    } catch (e) {
+      logger.warn('ConfigurableProvisioner.getUpdatedProvisionedThroughput failed', JSON.stringify({params}));
+      throw e;
     }
-
-    // Adjust write capacity
-    if (this.config.writeCapacity.increment.isAdjustmentRequired(params)){
-      newProvisionedThroughput.WriteCapacityUnits = this.config.writeCapacity.increment.calculateValue(params);
-    } else if (this.config.writeCapacity.decrement.isAdjustmentRequired(params)) {
-      newProvisionedThroughput.WriteCapacityUnits = this.config.writeCapacity.decrement.calculateValue(params);
-    }
-
-    if (newProvisionedThroughput.ReadCapacityUnits === params.ProvisionedThroughput.ReadCapacityUnits
-      && newProvisionedThroughput.WriteCapacityUnits === params.ProvisionedThroughput.WriteCapacityUnits) {
-      return null;
-    }
-
-    return newProvisionedThroughput;
   }
 }
 

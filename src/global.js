@@ -5,10 +5,10 @@ import measured from 'measured';
 const glob = {
   stats : measured.createCollection(),
   logger : new winston.Logger({
-      level: 'debug',
+      level: 'info',
       transports: [
         new (winston.transports.Console)({
-          level: 'debug',
+          level: 'info',
           colorize: true,
           timestamp: true
         })

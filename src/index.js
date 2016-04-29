@@ -9,6 +9,7 @@ const {
   logger
 } = Global;
 
+logger.info('*** LAMBDA INIT ***');
 export let handler = async (event, context) => {
   try {
     logger.info('*** LAMBDA START ***');
@@ -24,17 +25,14 @@ export let handler = async (event, context) => {
 
         logger.info('Getting table description', tableName);
         let tableDescription = await db.describeTableAsync({TableName: tableName});
-        logger.info(JSON.stringify({tableDescription}));
 
         logger.info('Getting table consumed capacity description', tableName);
         let consumedCapacityTableDescription = await db.describeTableConsumedCapacityAsync(tableDescription.Table, 1);
-        logger.info(JSON.stringify({consumedCapacityTableDescription}));
 
         logger.info('Getting table update request', tableName);
         let tableUpdateRequest = config.getTableUpdate(tableDescription, consumedCapacityTableDescription);
         if (tableUpdateRequest) {
           logger.info('Updating table', tableName);
-          logger.info(JSON.stringify({tableUpdateRequest}));
           await db.updateTableAsync(tableUpdateRequest);
           logger.info('Updated table', tableName);
         }
@@ -63,9 +61,16 @@ export let handler = async (event, context) => {
     // Log readable info
     let updateRequests = capacityItems.map(i => i.tableUpdateRequest).filter(i => i != null);
     logger.info(updateRequests.length + ' table updates');
-    updateRequests.forEach(i => logger.info(JSON.stringify(i, null, 2)));
+    updateRequests.forEach(i => logger.debug(JSON.stringify(i, null, 2)));
     let totalMonthlyEstimatedCost = capacityItems.reduce((prev, curr) => prev + curr.monthlyEstimatedCost, 0);
-    logger.info('$' + totalMonthlyEstimatedCost + ' estimated monthly cost');
+    let totalProvisionedThroughput = capacityItems.reduce((prev, curr) => {
+      return {
+        ReadCapacityUnits: prev.ReadCapacityUnits + curr.totalTableProvisionedThroughput.ReadCapacityUnits,
+        WriteCapacityUnits: prev.WriteCapacityUnits + curr.totalTableProvisionedThroughput.WriteCapacityUnits, 
+      };
+    }, {ReadCapacityUnits: 0, WriteCapacityUnits: 0});
+    logger.info(JSON.stringify({TotalProvisionedThroughput: totalProvisionedThroughput}));
+    logger.info(JSON.stringify({TotalMonthlyEstimatedCost: totalMonthlyEstimatedCost}));
 
     // Return an empty response
     let response = null;

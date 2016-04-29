@@ -1,4 +1,4 @@
-import AWS from 'aws-sdk';
+import AWS from 'aws-sdk-promise';
 import Global from './global';
 import CloudWatch from './CloudWatch';
 const {
@@ -13,36 +13,49 @@ export default class DynamoDB {
   }
 
   async listTablesAsync() {
+    logger.debug('DynamoDB.listTablesAsync');
     let sw = stats.timer('DynamoDB.listTablesAsync').start()
     try {
-      return await this._db.listTables().promise();
-    }
-    finally {
+      let res = await this._db.listTables().promise();
+      return res.data;
+    } catch (ex) {
+      logger.warn('DynamoDB.listTablesAsync failed');
+      throw ex;
+    } finally {
       sw.end();
     }
   }
 
   async describeTableAsync(params) {
+    logger.debug('DynamoDB.describeTableAsync');
     let sw = stats.timer('DynamoDB.describeTableAsync').start();
     try {
-      return await this._db.describeTable(params).promise();
-    }
-    finally {
+      let res = await this._db.describeTable(params).promise();
+      return res.data;
+    } catch (ex) {
+      logger.warn('DynamoDB.describeTableAsync failed', JSON.stringify({params}));
+      throw ex;
+    } finally {
       sw.end();
     }
   }
 
   async updateTableAsync(params) {
+    logger.debug('DynamoDB.updateTableAsync');
     let sw = stats.timer('DynamoDB.updateTableAsync').start();
     try {
-      return this._db.updateTable(params).promise();
-    }
-    finally {
+      let res = this._db.updateTable(params).promise();
+      return res.data;
+    } catch (ex) {
+      logger.warn('DynamoDB.updateTableAsync failed', JSON.stringify({params}));
+      throw ex;
+    } finally {
       sw.end();
     }
   }
 
   async describeTableConsumedCapacityAsync(params, periodMinutes) {
+    logger.debug('DynamoDB.describeTableConsumedCapacityAsync');
     let sw = stats.timer('DynamoDB.describeTableConsumedCapacityAsync').start();
     try {
       // Make all the requests concurrently
@@ -79,38 +92,52 @@ export default class DynamoDB {
           GlobalSecondaryIndexes: gsis
         }
       };
-    }
-    finally {
+    } catch (ex) {
+      logger.warn('DynamoDB.describeTableConsumedCapacityAsync failed', JSON.stringify({params, periodMinutes}));
+      throw ex;
+    } finally {
       sw.end();
     }
   }
 
   getTotalTableProvisionedThroughput(params) {
-    let ReadCapacityUnits = params.Table.ProvisionedThroughput.ReadCapacityUnits;
-    let WriteCapacityUnits = params.Table.ProvisionedThroughput.WriteCapacityUnits;
+    logger.debug('DynamoDB.getTotalTableProvisionedThroughput');
+    try {
+      let ReadCapacityUnits = params.Table.ProvisionedThroughput.ReadCapacityUnits;
+      let WriteCapacityUnits = params.Table.ProvisionedThroughput.WriteCapacityUnits;
 
-    if (params.Table.GlobalSecondaryIndexes) {
-      ReadCapacityUnits += params.Table.GlobalSecondaryIndexes.reduce((prev, curr, i) => prev + curr.ProvisionedThroughput.ReadCapacityUnits, 0);
-      WriteCapacityUnits += params.Table.GlobalSecondaryIndexes.reduce((prev, curr, i) => prev + curr.ProvisionedThroughput.WriteCapacityUnits, 0);
+      if (params.Table.GlobalSecondaryIndexes) {
+        ReadCapacityUnits += params.Table.GlobalSecondaryIndexes.reduce((prev, curr, i) => prev + curr.ProvisionedThroughput.ReadCapacityUnits, 0);
+        WriteCapacityUnits += params.Table.GlobalSecondaryIndexes.reduce((prev, curr, i) => prev + curr.ProvisionedThroughput.WriteCapacityUnits, 0);
+      }
+
+      return {
+        ReadCapacityUnits,
+        WriteCapacityUnits
+      };
+    } catch (ex) {
+      logger.warn('DynamoDB.getTotalTableProvisionedThroughput failed', JSON.stringify({params}));
+      throw ex;
     }
-
-    return {
-      ReadCapacityUnits,
-      WriteCapacityUnits
-    };
   }
 
   getMonthlyEstimatedTableCost(provisionedThroughput) {
-    const averageHoursPerMonth = 720;
-    const readCostPerHour = 0.0065;
-    const readCostUnits = 50;
-    const writeCostPerHour = 0.0065;
-    const writeCostUnits = 10;
+    logger.debug('DynamoDB.getMonthlyEstimatedTableCost');
+    try {
+      const averageHoursPerMonth = 720;
+      const readCostPerHour = 0.0065;
+      const readCostUnits = 50;
+      const writeCostPerHour = 0.0065;
+      const writeCostUnits = 10;
 
-    let readCost = provisionedThroughput.ReadCapacityUnits / readCostUnits * readCostPerHour * averageHoursPerMonth;
-    let writeCost = provisionedThroughput.WriteCapacityUnits / writeCostUnits * writeCostPerHour * averageHoursPerMonth;
+      let readCost = provisionedThroughput.ReadCapacityUnits / readCostUnits * readCostPerHour * averageHoursPerMonth;
+      let writeCost = provisionedThroughput.WriteCapacityUnits / writeCostUnits * writeCostPerHour * averageHoursPerMonth;
 
-    return readCost + writeCost;
+      return readCost + writeCost;
+    } catch (ex) {
+      logger.warn('DynamoDB.getMonthlyEstimatedTableCost failed', JSON.stringify({provisionedThroughput}));
+      throw ex;
+    }
   }
 
   getArrayOrDefault(value) {
@@ -122,28 +149,34 @@ export default class DynamoDB {
   }
 
   async getConsumedCapacityAsync(isRead, tableName, globalSecondaryIndexName, periodMinutes) {
-    let EndTime = new Date();
-    let StartTime = new Date();
-    StartTime.setTime(EndTime - (60000 * periodMinutes));
-    let MetricName = isRead ? 'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
-    let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
-    let params = {
-        Namespace: 'AWS/DynamoDB',
-        MetricName,
-        Dimensions,
-        StartTime,
-        EndTime,
-        Period: (periodMinutes * 60),
-        Statistics: [ 'Average' ],
-        Unit: 'Count'
-    };
+    logger.debug('DynamoDB.getConsumedCapacityAsync');
+    try {
+      let EndTime = new Date();
+      let StartTime = new Date();
+      StartTime.setTime(EndTime - (60000 * periodMinutes));
+      let MetricName = isRead ? 'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
+      let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
+      let params = {
+          Namespace: 'AWS/DynamoDB',
+          MetricName,
+          Dimensions,
+          StartTime,
+          EndTime,
+          Period: (periodMinutes * 60),
+          Statistics: [ 'Average' ],
+          Unit: 'Count'
+      };
 
-    let data = await this._cw.getMetricStatisticsAsync(params);
-    return {
-      tableName,
-      globalSecondaryIndexName,
-      data
-    };
+      let data = await this._cw.getMetricStatisticsAsync(params);
+      return {
+        tableName,
+        globalSecondaryIndexName,
+        data
+      };
+    } catch (ex) {
+      logger.warn('DynamoDB.getConsumedCapacityAsync failed', JSON.stringify({isRead, tableName, globalSecondaryIndexName, periodMinutes}));
+      throw ex;
+    }
   }
 
   getDimensions(tableName, globalSecondaryIndexName) {
