@@ -73,10 +73,9 @@ The default setup of the configuration is to apply autoscaling to all tables,
 allowing for a no touch quick setup.
 
 dynamodb-lambda-autoscale takes a different approach to autoscaling
-configuration compared to other community projects.  Rather than making changes
-to a config file dynamodb-lambda-autoscale provides a function 'getTableUpdate'
-which must be implemented.
-
+configuration compared to other community projects.  Rather than making well
+defined changes to a config file this provides a callback function called
+'getTableUpdate' which must be implemented.
 
 ```javascript
 {
@@ -103,7 +102,8 @@ provisioned throughput and the consumed throughput for the past minute.
 Table updates will only be sent to AWS if the values are different for the
 current, this approach follows the popular code first pattern used in React.
 
-In most cases the default 'ConfigurableProvisioner' supplied will provide
+In most cases the default [Config.js](./src/Config.js) which uses the supplied
+[ConfigurableProvisioner.js](./src/ConfigurableProvisioner.js) will provide
 enough functionality out of box such that additional coding is not required.
 The default provisioner provides the following features.
 
@@ -133,7 +133,7 @@ implementation.
 
 ## Dependencies
 
-dynamodb-lambda-autoscale has the following main dependencies:
+This project has the following main dependencies:
 + aws-sdk - Access to AWS services
 + winston - Logging
 + dotenv - Environment variable configuration useful for lambda
