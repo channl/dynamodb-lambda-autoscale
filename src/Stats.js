@@ -6,9 +6,11 @@ export default class Stats {
 
   reset() {
     for(let name in this._stats._metrics) {
-      let metric = this._stats._metrics[name];
-      if (metric.unref) {
-        metric.unref();
+      if ({}.hasOwnProperty.call(this._stats._metrics, name)) {
+        let metric = this._stats._metrics[name];
+        if (metric.unref) {
+          metric.unref();
+        }
       }
     }
 
@@ -40,9 +42,14 @@ export default class Stats {
     });
 
     let nameLen = Math.max.apply(Math, statsSummary.map(i => i.name.length));
-    let statsAsStrings = statsSummary.map(s => this.padRight(s.name, nameLen + 2) + this.padRight(s.mean + 'ms', 10) + ' ' + s.count);
+    let statsAsStrings = statsSummary.map(s =>
+      this.padRight(s.name, nameLen + 2) +
+      this.padRight(s.mean + 'ms', 10) +
+      ' ' +
+      s.count);
+
     return statsAsStrings;
-  };
+  }
 
   padRight(value, length) {
     return value + Array(length - value.length).join(' ');

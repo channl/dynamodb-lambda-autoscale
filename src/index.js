@@ -1,9 +1,10 @@
-import babelPolyfill from 'babel-polyfill';
-import config from './config';
+import babelPolyfill  // eslint-disable-line no-unused-vars
+  from 'babel-polyfill';
+import config from './Config';
 import dotenv from 'dotenv';
 import DynamoDB from './DynamoDB';
 import Stats from './Stats';
-import Global from './global';
+import Global from './Global';
 const {
   stats,
   logger
@@ -17,20 +18,27 @@ export let handler = async (event, context) => {
     // Load environment variables
     dotenv.load();
 
-    let db = new DynamoDB(config.connection.dynamoDB, config.connection.cloudWatch);
+    let db = new DynamoDB(
+      config.connection.dynamoDB,
+      config.connection.cloudWatch);
+
     let tables = await db.listTablesAsync();
     let capacityTasks = tables
       .TableNames
       .map(async tableName => {
 
         logger.info('Getting table description', tableName);
-        let tableDescription = await db.describeTableAsync({TableName: tableName});
+        let tableDescription = await db.describeTableAsync(
+          {TableName: tableName});
 
         logger.info('Getting table consumed capacity description', tableName);
-        let consumedCapacityTableDescription = await db.describeTableConsumedCapacityAsync(tableDescription.Table, 1);
+        let consumedCapacityTableDescription = await db
+          .describeTableConsumedCapacityAsync(tableDescription.Table, 1);
 
         logger.info('Getting table update request', tableName);
-        let tableUpdateRequest = config.getTableUpdate(tableDescription, consumedCapacityTableDescription);
+        let tableUpdateRequest = config.getTableUpdate(tableDescription,
+          consumedCapacityTableDescription);
+
         if (tableUpdateRequest) {
           logger.info('Updating table', tableName);
           await db.updateTableAsync(tableUpdateRequest);
@@ -38,9 +46,15 @@ export let handler = async (event, context) => {
         }
 
         // Log the monthlyEstimatedCost
-        let totalTableProvisionedThroughput = db.getTotalTableProvisionedThroughput(tableDescription);
-        let monthlyEstimatedCost = db.getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
-        stats.counter('DynamoDB.monthlyEstimatedCost').inc(monthlyEstimatedCost);
+        let totalTableProvisionedThroughput = db
+          .getTotalTableProvisionedThroughput(tableDescription);
+
+        let monthlyEstimatedCost = db
+        .getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
+
+        stats
+          .counter('DynamoDB.monthlyEstimatedCost')
+          .inc(monthlyEstimatedCost);
 
         return {
           tableDescription,
@@ -59,18 +73,30 @@ export let handler = async (event, context) => {
     st.reset();
 
     // Log readable info
-    let updateRequests = capacityItems.map(i => i.tableUpdateRequest).filter(i => i != null);
+    let updateRequests = capacityItems
+      .map(i => i.tableUpdateRequest)
+      .filter(i => i !== null);
+
     logger.info(updateRequests.length + ' table updates');
     updateRequests.forEach(i => logger.debug(JSON.stringify(i, null, 2)));
-    let totalMonthlyEstimatedCost = capacityItems.reduce((prev, curr) => prev + curr.monthlyEstimatedCost, 0);
+
+    let totalMonthlyEstimatedCost = capacityItems
+      .reduce((prev, curr) => prev + curr.monthlyEstimatedCost, 0);
+
     let totalProvisionedThroughput = capacityItems.reduce((prev, curr) => {
       return {
-        ReadCapacityUnits: prev.ReadCapacityUnits + curr.totalTableProvisionedThroughput.ReadCapacityUnits,
-        WriteCapacityUnits: prev.WriteCapacityUnits + curr.totalTableProvisionedThroughput.WriteCapacityUnits, 
+        ReadCapacityUnits: prev.ReadCapacityUnits +
+          curr.totalTableProvisionedThroughput.ReadCapacityUnits,
+        WriteCapacityUnits: prev.WriteCapacityUnits +
+          curr.totalTableProvisionedThroughput.WriteCapacityUnits,
       };
     }, {ReadCapacityUnits: 0, WriteCapacityUnits: 0});
-    logger.info(JSON.stringify({TotalProvisionedThroughput: totalProvisionedThroughput}));
-    logger.info(JSON.stringify({TotalMonthlyEstimatedCost: totalMonthlyEstimatedCost}));
+
+    logger.info(
+      JSON.stringify({TotalProvisionedThroughput: totalProvisionedThroughput}));
+
+    logger.info(
+      JSON.stringify({TotalMonthlyEstimatedCost: totalMonthlyEstimatedCost}));
 
     // Return an empty response
     let response = null;

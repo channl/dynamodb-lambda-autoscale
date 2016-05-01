@@ -16,7 +16,7 @@ gulp.task('clean', function(cb) {
 });
 
 gulp.task("webpack", function () {
-  return gulp.src('src/index.js')
+  return gulp.src('src/Index.js')
   .pipe(webpack( require('./webpack-dev.config.js') ))
   .pipe(gulp.dest('build/'));
 });
@@ -24,7 +24,7 @@ gulp.task("webpack", function () {
 // The js task could be replaced with gulp-coffee as desired.
 gulp.task("js", function () {
   return gulp
-    .src("build/index.js")
+    .src("build/Index.js")
     .pipe(gulp.dest("dist/"));
 });
 

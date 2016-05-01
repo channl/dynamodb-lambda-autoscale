@@ -1,10 +1,9 @@
-import Global from './global';
+import Global from './Global';
 const {
-  stats,
   logger
 } = Global;
 
-class ConfigurableProvisioner {
+export default class ConfigurableProvisioner {
 
   constructor(config) {
     this.config = config;
@@ -17,16 +16,21 @@ class ConfigurableProvisioner {
       let tableData = {
         TableName: tableDescription.Table.TableName,
         ProvisionedThroughput: tableDescription.Table.ProvisionedThroughput,
-        ConsumedThroughput: tableConsumedCapacityDescription.Table.ConsumedThroughput
+        ConsumedThroughput:
+          tableConsumedCapacityDescription.Table.ConsumedThroughput
       };
 
-      let provisionedThroughput = this.getUpdatedProvisionedThroughput(tableData);
+      let provisionedThroughput = this
+        .getUpdatedProvisionedThroughput(tableData);
+
       let gsis = tableDescription.Table.GlobalSecondaryIndexes || [];
       let globalSecondaryIndexUpdates = gsis
-        .map(gsi => this.getGlobalSecondaryIndexUpdate(tableDescription, tableConsumedCapacityDescription, gsi))
-        .filter(i => i != null);
+        .map(gsi => this.getGlobalSecondaryIndexUpdate(
+          tableDescription, tableConsumedCapacityDescription, gsi))
+        .filter(i => i !== null);
 
-      if (!provisionedThroughput && (globalSecondaryIndexUpdates ==null || globalSecondaryIndexUpdates.length === 0)) {
+      if (!provisionedThroughput && (globalSecondaryIndexUpdates === null ||
+        globalSecondaryIndexUpdates.length === 0)) {
         return null;
       }
 
@@ -38,22 +42,29 @@ class ConfigurableProvisioner {
         result.ProvisionedThroughput = provisionedThroughput;
       }
 
-      if (globalSecondaryIndexUpdates && globalSecondaryIndexUpdates.length > 0) {
+      if (globalSecondaryIndexUpdates &&
+        globalSecondaryIndexUpdates.length > 0) {
         result.GlobalSecondaryIndexUpdates = globalSecondaryIndexUpdates;
       }
 
       return result;
     } catch (e) {
-      logger.warn('ConfigurableProvisioner.getTableUpdate failed', JSON.stringify({tableDescription, tableConsumedCapacityDescription}));
+      logger.warn(
+        'ConfigurableProvisioner.getTableUpdate failed',
+        JSON.stringify({tableDescription, tableConsumedCapacityDescription}));
+
       logger.error(e);
     }
   }
 
-  getGlobalSecondaryIndexUpdate(tableDescription, tableConsumedCapacityDescription, gsi){
+  getGlobalSecondaryIndexUpdate(
+    tableDescription, tableConsumedCapacityDescription, gsi) {
     try {
       logger.debug('ConfigurableProvisioner.getGlobalSecondaryIndexUpdate');
 
-      let gsicc = tableConsumedCapacityDescription.Table.GlobalSecondaryIndexes.find(i => i.IndexName === gsi.IndexName);
+      let gsicc = tableConsumedCapacityDescription
+        .Table.GlobalSecondaryIndexes.find(i => i.IndexName === gsi.IndexName);
+
       let provisionedThroughput = this.getUpdatedProvisionedThroughput({
         TableName: tableDescription.Table.TableName,
         IndexName: gsicc.IndexName,
@@ -61,7 +72,7 @@ class ConfigurableProvisioner {
         ConsumedThroughput: gsicc.ConsumedThroughput
       });
 
-      if (provisionedThroughput == null) {
+      if (provisionedThroughput === null) {
         return null;
       }
 
@@ -72,7 +83,11 @@ class ConfigurableProvisioner {
         }
       };
     } catch (e) {
-      logger.warn('ConfigurableProvisioner.getGlobalSecondaryIndexUpdate failed', JSON.stringify({tableDescription, tableConsumedCapacityDescription, gsi}));
+      logger.warn(
+        'ConfigurableProvisioner.getGlobalSecondaryIndexUpdate failed',
+        JSON.stringify(
+          {tableDescription, tableConsumedCapacityDescription, gsi}));
+
       throw e;
     }
   }
@@ -87,30 +102,46 @@ class ConfigurableProvisioner {
       };
 
       // Adjust read capacity
-      if (this.config.readCapacity.increment.isAdjustmentRequired(params, this.config.readCapacity.increment.calculateValue)){
-        newProvisionedThroughput.ReadCapacityUnits = this.config.readCapacity.increment.calculateValue(params);
-      } else if (this.config.readCapacity.decrement.isAdjustmentRequired(params, this.config.readCapacity.decrement.calculateValue)) {
-        newProvisionedThroughput.ReadCapacityUnits = this.config.readCapacity.decrement.calculateValue(params);
+      if (this.config.readCapacity.increment.isAdjustmentRequired(
+        params, this.config.readCapacity.increment.calculateValue)) {
+
+        newProvisionedThroughput.ReadCapacityUnits = this.config
+          .readCapacity.increment.calculateValue(params);
+
+      } else if (this.config.readCapacity.decrement.isAdjustmentRequired(
+        params, this.config.readCapacity.decrement.calculateValue)) {
+
+        newProvisionedThroughput.ReadCapacityUnits = this.config
+          .readCapacity.decrement.calculateValue(params);
       }
 
       // Adjust write capacity
-      if (this.config.writeCapacity.increment.isAdjustmentRequired(params, this.config.writeCapacity.increment.calculateValue)){
-        newProvisionedThroughput.WriteCapacityUnits = this.config.writeCapacity.increment.calculateValue(params);
-      } else if (this.config.writeCapacity.decrement.isAdjustmentRequired(params, this.config.writeCapacity.decrement.calculateValue)) {
-        newProvisionedThroughput.WriteCapacityUnits = this.config.writeCapacity.decrement.calculateValue(params);
+      if (this.config.writeCapacity.increment.isAdjustmentRequired(
+        params, this.config.writeCapacity.increment.calculateValue)) {
+
+        newProvisionedThroughput.WriteCapacityUnits = this.config
+          .writeCapacity.increment.calculateValue(params);
+
+      } else if (this.config.writeCapacity.decrement.isAdjustmentRequired(
+        params, this.config.writeCapacity.decrement.calculateValue)) {
+
+        newProvisionedThroughput.WriteCapacityUnits = this.config
+          .writeCapacity.decrement.calculateValue(params);
       }
 
-      if (newProvisionedThroughput.ReadCapacityUnits === params.ProvisionedThroughput.ReadCapacityUnits
-        && newProvisionedThroughput.WriteCapacityUnits === params.ProvisionedThroughput.WriteCapacityUnits) {
+      if (newProvisionedThroughput.ReadCapacityUnits ===
+        params.ProvisionedThroughput.ReadCapacityUnits &&
+        newProvisionedThroughput.WriteCapacityUnits ===
+        params.ProvisionedThroughput.WriteCapacityUnits) {
         return null;
       }
 
       return newProvisionedThroughput;
     } catch (e) {
-      logger.warn('ConfigurableProvisioner.getUpdatedProvisionedThroughput failed', JSON.stringify({params}));
+      logger.warn(
+        'ConfigurableProvisioner.getUpdatedProvisionedThroughput failed',
+        JSON.stringify({params}));
       throw e;
     }
   }
 }
-
-export default ConfigurableProvisioner;

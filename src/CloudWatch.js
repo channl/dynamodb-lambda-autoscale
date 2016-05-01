@@ -1,5 +1,5 @@
 import AWS from 'aws-sdk-promise';
-import Global from './global';
+import Global from './Global';
 const {
   stats,
   logger
@@ -12,12 +12,14 @@ export default class CloudWatch {
 
   async getMetricStatisticsAsync(params) {
     logger.debug('CloudWatch.getMetricStatisticsAsync');
-    let sw = stats.timer('CloudWatch.getMetricStatisticsAsync').start()
+    let sw = stats.timer('CloudWatch.getMetricStatisticsAsync').start();
     try {
       let res = await this._cw.getMetricStatistics(params).promise();
       return res.data;
     } catch (ex) {
-      logger.warn('CloudWatch.getMetricStatisticsAsync failed', JSON.stringify({params}));
+      logger.warn(
+        'CloudWatch.getMetricStatisticsAsync failed',
+        JSON.stringify({params}));
       throw ex;
     } finally {
       sw.end();

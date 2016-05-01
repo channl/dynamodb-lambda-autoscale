@@ -1,5 +1,5 @@
 import AWS from 'aws-sdk-promise';
-import Global from './global';
+import Global from './Global';
 import CloudWatch from './CloudWatch';
 const {
   stats,
@@ -14,7 +14,7 @@ export default class DynamoDB {
 
   async listTablesAsync() {
     logger.debug('DynamoDB.listTablesAsync');
-    let sw = stats.timer('DynamoDB.listTablesAsync').start()
+    let sw = stats.timer('DynamoDB.listTablesAsync').start();
     try {
       let res = await this._db.listTables().promise();
       return res.data;
@@ -33,7 +33,9 @@ export default class DynamoDB {
       let res = await this._db.describeTable(params).promise();
       return res.data;
     } catch (ex) {
-      logger.warn('DynamoDB.describeTableAsync failed', JSON.stringify({params}));
+      logger.warn(
+        'DynamoDB.describeTableAsync failed',
+        JSON.stringify({params}));
       throw ex;
     } finally {
       sw.end();
@@ -47,7 +49,9 @@ export default class DynamoDB {
       let res = this._db.updateTable(params).promise();
       return res.data;
     } catch (ex) {
-      logger.warn('DynamoDB.updateTableAsync failed', JSON.stringify({params}));
+      logger.warn(
+        'DynamoDB.updateTableAsync failed',
+        JSON.stringify({params}));
       throw ex;
     } finally {
       sw.end();
@@ -56,13 +60,27 @@ export default class DynamoDB {
 
   async describeTableConsumedCapacityAsync(params, periodMinutes) {
     logger.debug('DynamoDB.describeTableConsumedCapacityAsync');
-    let sw = stats.timer('DynamoDB.describeTableConsumedCapacityAsync').start();
+    let sw = stats
+      .timer('DynamoDB.describeTableConsumedCapacityAsync')
+      .start();
+
     try {
       // Make all the requests concurrently
-      let tableRead = this.getConsumedCapacityAsync(true, params.TableName, null, periodMinutes);
-      let tableWrite = this.getConsumedCapacityAsync(false, params.TableName, null, periodMinutes);
-      let gsiReads = this.getArrayOrDefault(params.GlobalSecondaryIndexes).map(gsi => this.getConsumedCapacityAsync(true, params.TableName, gsi.IndexName, periodMinutes));
-      let gsiWrites = this.getArrayOrDefault(params.GlobalSecondaryIndexes).map(gsi => this.getConsumedCapacityAsync(true, params.TableName, gsi.IndexName, periodMinutes));
+      let tableRead = this.getConsumedCapacityAsync(
+        true, params.TableName, null, periodMinutes);
+
+      let tableWrite = this.getConsumedCapacityAsync(
+        false, params.TableName, null, periodMinutes);
+
+      let gsiReads = this
+        .getArrayOrDefault(params.GlobalSecondaryIndexes)
+        .map(gsi => this.getConsumedCapacityAsync(
+          true, params.TableName, gsi.IndexName, periodMinutes));
+
+      let gsiWrites = this
+        .getArrayOrDefault(params.GlobalSecondaryIndexes)
+        .map(gsi => this.getConsumedCapacityAsync(
+          true, params.TableName, gsi.IndexName, periodMinutes));
 
       // Await on the results
       let tableConsumedRead = await tableRead;
@@ -93,7 +111,9 @@ export default class DynamoDB {
         }
       };
     } catch (ex) {
-      logger.warn('DynamoDB.describeTableConsumedCapacityAsync failed', JSON.stringify({params, periodMinutes}));
+      logger.warn(
+        'DynamoDB.describeTableConsumedCapacityAsync failed',
+        JSON.stringify({params, periodMinutes}));
       throw ex;
     } finally {
       sw.end();
@@ -103,12 +123,20 @@ export default class DynamoDB {
   getTotalTableProvisionedThroughput(params) {
     logger.debug('DynamoDB.getTotalTableProvisionedThroughput');
     try {
-      let ReadCapacityUnits = params.Table.ProvisionedThroughput.ReadCapacityUnits;
-      let WriteCapacityUnits = params.Table.ProvisionedThroughput.WriteCapacityUnits;
+      let ReadCapacityUnits = params.Table
+        .ProvisionedThroughput.ReadCapacityUnits;
+
+      let WriteCapacityUnits = params.Table
+        .ProvisionedThroughput.WriteCapacityUnits;
 
       if (params.Table.GlobalSecondaryIndexes) {
-        ReadCapacityUnits += params.Table.GlobalSecondaryIndexes.reduce((prev, curr, i) => prev + curr.ProvisionedThroughput.ReadCapacityUnits, 0);
-        WriteCapacityUnits += params.Table.GlobalSecondaryIndexes.reduce((prev, curr, i) => prev + curr.ProvisionedThroughput.WriteCapacityUnits, 0);
+        ReadCapacityUnits += params.Table.GlobalSecondaryIndexes
+          .reduce((prev, curr) =>
+            prev + curr.ProvisionedThroughput.ReadCapacityUnits, 0);
+
+        WriteCapacityUnits += params.Table.GlobalSecondaryIndexes
+          .reduce((prev, curr) =>
+            prev + curr.ProvisionedThroughput.WriteCapacityUnits, 0);
       }
 
       return {
@@ -116,7 +144,9 @@ export default class DynamoDB {
         WriteCapacityUnits
       };
     } catch (ex) {
-      logger.warn('DynamoDB.getTotalTableProvisionedThroughput failed', JSON.stringify({params}));
+      logger.warn(
+        'DynamoDB.getTotalTableProvisionedThroughput failed',
+        JSON.stringify({params}));
       throw ex;
     }
   }
@@ -130,12 +160,18 @@ export default class DynamoDB {
       const writeCostPerHour = 0.0065;
       const writeCostUnits = 10;
 
-      let readCost = provisionedThroughput.ReadCapacityUnits / readCostUnits * readCostPerHour * averageHoursPerMonth;
-      let writeCost = provisionedThroughput.WriteCapacityUnits / writeCostUnits * writeCostPerHour * averageHoursPerMonth;
+      let readCost = provisionedThroughput.ReadCapacityUnits /
+        readCostUnits * readCostPerHour * averageHoursPerMonth;
+
+      let writeCost = provisionedThroughput.WriteCapacityUnits /
+        writeCostUnits * writeCostPerHour * averageHoursPerMonth;
 
       return readCost + writeCost;
     } catch (ex) {
-      logger.warn('DynamoDB.getMonthlyEstimatedTableCost failed', JSON.stringify({provisionedThroughput}));
+      logger.warn(
+        'DynamoDB.getMonthlyEstimatedTableCost failed',
+        JSON.stringify({provisionedThroughput}));
+
       throw ex;
     }
   }
@@ -145,26 +181,29 @@ export default class DynamoDB {
   }
 
   getAverageValue(data) {
-    return data.data.Datapoints.length === 0 ? 0 : data.data.Datapoints[0].Average;
+    return data.data.Datapoints.length === 0 ?
+      0 : data.data.Datapoints[0].Average;
   }
 
-  async getConsumedCapacityAsync(isRead, tableName, globalSecondaryIndexName, periodMinutes) {
+  async getConsumedCapacityAsync(
+    isRead, tableName, globalSecondaryIndexName, periodMinutes) {
     logger.debug('DynamoDB.getConsumedCapacityAsync');
     try {
       let EndTime = new Date();
       let StartTime = new Date();
       StartTime.setTime(EndTime - (60000 * periodMinutes));
-      let MetricName = isRead ? 'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
+      let MetricName = isRead ?
+        'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
       let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
       let params = {
-          Namespace: 'AWS/DynamoDB',
-          MetricName,
-          Dimensions,
-          StartTime,
-          EndTime,
-          Period: (periodMinutes * 60),
-          Statistics: [ 'Average' ],
-          Unit: 'Count'
+        Namespace: 'AWS/DynamoDB',
+        MetricName,
+        Dimensions,
+        StartTime,
+        EndTime,
+        Period: (periodMinutes * 60),
+        Statistics: [ 'Average' ],
+        Unit: 'Count'
       };
 
       let data = await this._cw.getMetricStatisticsAsync(params);
@@ -174,7 +213,10 @@ export default class DynamoDB {
         data
       };
     } catch (ex) {
-      logger.warn('DynamoDB.getConsumedCapacityAsync failed', JSON.stringify({isRead, tableName, globalSecondaryIndexName, periodMinutes}));
+      logger.warn(
+        'DynamoDB.getConsumedCapacityAsync failed',
+        JSON.stringify(
+          {isRead, tableName, globalSecondaryIndexName, periodMinutes}));
       throw ex;
     }
   }
@@ -187,6 +229,6 @@ export default class DynamoDB {
       ];
     }
 
-    return [{ Name: 'TableName', Value: tableName}];
+    return [ { Name: 'TableName', Value: tableName} ];
   }
 }

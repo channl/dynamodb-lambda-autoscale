@@ -4,7 +4,7 @@ var StatsPlugin = require("stats-webpack-plugin");
 var ContextReplacementPlugin = require("webpack/lib/ContextReplacementPlugin");
 
 module.exports = function(options) {
-	var entry = { 'index': './src/index.js' };
+	var entry = { 'index': './src/Index.js' };
 
   var loaders = [
     { test: /\.jsx$/, loader: options.hotComponents ? ["react-hot-loader", "babel-loader?stage=0"] : "babel-loader?stage=0"},
