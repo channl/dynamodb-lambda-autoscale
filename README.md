@@ -12,6 +12,16 @@
 + Optimised lambda package via 'webpack'
 + ES7 code
 
+## Disclaimer
+
+Any reliance you place on dynamodb-lambda-autoscale is strictly at your own
+risk.
+
+In no event will we be liable for any loss or damage including without
+limitation, indirect or consequential loss or damage, or any loss or damage
+whatsoever arising from loss of data or profits arising out of, or in
+connection with, the use of this code.
+
 ## Getting started
 
 1. Build and package the code
