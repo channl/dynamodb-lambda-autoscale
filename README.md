@@ -1,5 +1,5 @@
 # dynamodb-lambda-autoscale
-** Autoscale AWS DynamoDB using an AWS Lambda function
+**Autoscale AWS DynamoDB using an AWS Lambda function**
 
 + 5 minute setup process
 + Serverless design
