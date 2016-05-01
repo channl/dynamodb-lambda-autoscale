@@ -84,18 +84,13 @@ defined changes to a config file this provides a callback function called
     cloudWatch: { apiVersion: '2010-08-01', region: 'us-east-1' }
   },
   getTableUpdate: (description, consumedCapacityDescription) => {
-    // The 'description' parameter is JSON in the following format
-    <http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DescribeTable.html#API_DescribeTable_ResponseSyntax>
-
-    // The 'consumedCapacityDescription' follows the same format but details
-    // the consumed capacity found via the cloudwatch api
-
-    // The return type is either null for no update or JSON in the
-    // following format
-    <http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateTable.html#API_UpdateTable_ResponseSyntax>
+    // Logic goes here....
   }
 };
 ```
+
+[DescribeTable.ResponseSyntax](http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DescribeTable.html#API_DescribeTable_ResponseSyntax)
+[UpdateTable.ResponseSyntax](http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateTable.html#API_UpdateTable_ResponseSyntax)
 
 The function is given the information such as the table name, current table
 provisioned throughput and the consumed throughput for the past minute.
