@@ -1,25 +1,18 @@
-dynamodb-lambda-autoscale
-=========================
-Autoscale AWS DynamoDB using an AWS Lambda function
+# dynamodb-lambda-autoscale
+**Autoscale AWS DynamoDB using an AWS Lambda function
 
-DynamoDB does not currently have an official way of autoscaling the capacity throughput for reads and writes.
++ 5 minute setup process
++ Serverless design
++ Flexible code over configuration style
++ Autoscale table and global secondary indexes
++ Autoscale multiple tables
++ Optimised performance using concurrent queries
++ Statistics via 'measured'
++ AWS credential configuration via 'dotenv'
++ Optimised lambda package via 'webpack'
++ ES7 code
 
-Features
---------
-
-- 5 minute setup process
-- Serverless design
-- Flexible code over configuration style
-- Autoscale table and global secondary indexes
-- Autoscale multiple tables
-- Optimised performance using concurrent queries
-- Statistics via 'measured'
-- AWS credential configuration via 'dotenv'
-- Optimised lambda package via 'webpack'
-- ES7 code
-
-Setup
------
+## Getting started
 
 1. Build and package the code
   1. Fork the repo
@@ -34,6 +27,10 @@ Setup
   4. Run 'npm run build'
   5. Verify this has created a 'dist.zip' file
   6. Optionally, run a local test by running 'npm run start'
+
+## Running on AWS Lambda
+
+1. Follow the steps in 'Running locally'
 2. Create an AWS Policy and Role
   1. Create a policy called 'DynamoDBLambdaAutoscale'
   2. Use the following content to give access to dynamoDB, cloudwatch and lambda logging
@@ -70,27 +67,79 @@ Setup
   8. Set the Timeout to 5 seconds (higher possibly depending on the amount of tables you have)
   9. Once the function is created, attach a 'scheduled event' event source and make it run every minute
 
-License
--------
+## Configuration
 
-The MIT License (MIT)
+The default setup of the configuration is to apply autoscaling to all tables,
+allowing for a no touch quick setup.
 
-Copyright (c) 2016 for dynamodb-lambda-autoscale
+dynamodb-lambda-autoscale takes a different approach to autoscaling
+configuration compared to other community projects.  Rather than making changes
+to a config file dynamodb-lambda-autoscale provides a function 'getTableUpdate'
+which must be implemented.
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+```javascript
+{
+  connection: {
+    dynamoDB: { apiVersion: '2012-08-10', region: 'us-east-1' },
+    cloudWatch: { apiVersion: '2010-08-01', region: 'us-east-1' }
+  },
+  getTableUpdate: (description, consumedCapacityDescription) => {
+    // The 'description' parameter is JSON in the following format
+    <http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DescribeTable.html#API_DescribeTable_ResponseSyntax>
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
+    // The 'consumedCapacityDescription' follows the same format but details
+    // the consumed capacity found via the cloudwatch api
+
+    // The return type is either null for no update or JSON in the
+    // following format
+    <http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateTable.html#API_UpdateTable_ResponseSyntax>
+  }
+};
+```
+
+The function is given the information such as the table name, current table
+provisioned throughput and the consumed throughput for the past minute.
+Table updates will only be sent to AWS if the values are different for the
+current, this approach follows the popular code first pattern used in React.
+
+In most cases the default 'ConfigurableProvisioner' supplied will provide
+enough functionality out of box such that additional coding is not required.
+The default provisioner provides the following features.
+
+- Separate 'Read' and 'Write' capacity adjustment
+- Separate 'Increment' and 'Decrement' capacity adjustment
+- Read/Write provisioned capacity increased
+  - if capacity utilisation > 90%
+  - by either 100% or 3 units, which ever is the greater
+  - with hard min/max limits of 1 and 10 respectively
+- Read/Write provisioned capacity decreased
+  - if capacity utilisation < 30% AND
+  - if at least 60 minutes have passed since the last increment AND
+  - if at least 60 minutes have passed since the last decrement AND
+  - if the adjustment will be at least 3 units AND
+  - if we are allowed to utilise 1 of our 4 AWS enforced decrements
+  - to the consumed throughput value
+  - with a hard min limit of 1
+
+As AWS only allows 4 table decrements in a calendar day we have an intelligent
+algorithm which segments the remaining time to midnight by the amount of
+decrements we have left.  This logic allows us to utilise each 4 decrements
+efficiently.  The increments are unlimited so the algorithm follows a unique
+'sawtooth' profile, dropping the provisioned throughput all the way down to
+the consumed throughput rather than gradually.  Please see
+[RateLimitedDecrement.js](./src/RateLimitedDecrement.js) for full
+implementation.
+
+## Dependencies
+
+dynamodb-lambda-autoscale has the following main dependencies:
++ aws-sdk - Access to AWS services
++ winston - Logging
++ dotenv - Environment variable configuration useful for lambda
++ measured - Statistics gathering
+
+## Licensing
+
+The source code is licensed under the MIT license found in the
+[LICENSE](LICENSE) file in the root directory of this source tree.
