@@ -80,7 +80,7 @@ export default class DynamoDB {
       let gsiWrites = this
         .getArrayOrDefault(params.GlobalSecondaryIndexes)
         .map(gsi => this.getConsumedCapacityAsync(
-          true, params.TableName, gsi.IndexName, periodMinutes));
+          false, params.TableName, gsi.IndexName, periodMinutes));
 
       // Await on the results
       let tableConsumedRead = await tableRead;
