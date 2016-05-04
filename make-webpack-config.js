@@ -28,7 +28,7 @@ module.exports = function(options) {
 			"/assets/";
 
 	var output = {
-		path: path.join(__dirname, "build"),
+		path: path.join(__dirname, "dist"),
 		publicPath,
 		filename: "[name].js",
 		chunkFilename: options.devServer ? "[id].js" : "[name].js",

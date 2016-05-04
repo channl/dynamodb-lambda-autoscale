@@ -1,7 +1,7 @@
 try {
   var lambda = require('../dist/Index.js');
 
-  process.chdir('./build');
+  process.chdir('./dist');
 
   var context = {
     succeed: function(data) {

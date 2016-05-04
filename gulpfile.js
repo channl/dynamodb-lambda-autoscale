@@ -17,14 +17,14 @@ gulp.task('clean', function(cb) {
 
 gulp.task("webpack", function () {
   return gulp.src('src/Index.js')
-  .pipe(webpack( require('./webpack-dev.config.js') ))
-  .pipe(gulp.dest('build/'));
+  .pipe(webpack( require('./webpack-prod.config.js') ))
+  .pipe(gulp.dest('dist/'));
 });
 
 // The js task could be replaced with gulp-coffee as desired.
 gulp.task("js", function () {
   return gulp
-    .src("build/Index.js")
+    .src("dist/Index.js")
     .pipe(gulp.dest("dist/"));
 });
 
