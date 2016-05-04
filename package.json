@@ -15,8 +15,7 @@
     "mocha": "--require resources/mocha-bootload src/**/__tests__/**/*.js"
   },
   "scripts": {
-    "test": "npm run lint && npm run check && npm run testonly",
-    "testonly": "mocha $npm_package_options_mocha",
+    "test": "npm run lint && npm run check",
     "lint": "eslint src",
     "check": "flow check",
     "build": "gulp dist",
