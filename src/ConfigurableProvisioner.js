@@ -1,17 +1,23 @@
-import Global from './Global';
-const {
-  logger
-} = Global;
+import {
+  json,
+  warning,
+  invariant } from '../src/Global';
 
 export default class ConfigurableProvisioner {
 
   constructor(config) {
+    invariant(typeof config !== 'undefined',
+      'Parameter \'config\' is not set');
+
     this.config = config;
   }
 
   getTableUpdate(tableDescription, tableConsumedCapacityDescription) {
     try {
-      logger.debug('ConfigurableProvisioner.getTableUpdate');
+      invariant(typeof tableDescription !== 'undefined',
+        'Parameter \'tableDescription\' is not set');
+      invariant(typeof tableConsumedCapacityDescription !== 'undefined',
+        'Parameter \'tableConsumedCapacityDescription\' is not set');
 
       let tableData = {
         TableName: tableDescription.Table.TableName,
@@ -49,18 +55,25 @@ export default class ConfigurableProvisioner {
 
       return result;
     } catch (e) {
-      logger.warn(
-        'ConfigurableProvisioner.getTableUpdate failed',
-        JSON.stringify({tableDescription, tableConsumedCapacityDescription}));
-
-      logger.error(e);
+      warning(JSON.stringify({
+        class: 'ConfigurableProvisioner',
+        function: 'getTableUpdate',
+        tableDescription,
+        tableConsumedCapacityDescription
+      }, null, json.padding));
+      throw e;
     }
   }
 
   getGlobalSecondaryIndexUpdate(
     tableDescription, tableConsumedCapacityDescription, gsi) {
     try {
-      logger.debug('ConfigurableProvisioner.getGlobalSecondaryIndexUpdate');
+      invariant(typeof tableDescription !== 'undefined',
+        'Parameter \'tableDescription\' is not set');
+      invariant(typeof tableConsumedCapacityDescription !== 'undefined',
+        'Parameter \'tableConsumedCapacityDescription\' is not set');
+      invariant(typeof gsi !== 'undefined',
+        'Parameter \'gsi\' is not set');
 
       let gsicc = tableConsumedCapacityDescription
         .Table.GlobalSecondaryIndexes.find(i => i.IndexName === gsi.IndexName);
@@ -83,18 +96,21 @@ export default class ConfigurableProvisioner {
         }
       };
     } catch (e) {
-      logger.warn(
-        'ConfigurableProvisioner.getGlobalSecondaryIndexUpdate failed',
-        JSON.stringify(
-          {tableDescription, tableConsumedCapacityDescription, gsi}));
-
+      warning(JSON.stringify({
+        class: 'ConfigurableProvisioner',
+        function: 'getGlobalSecondaryIndexUpdate',
+        tableDescription,
+        tableConsumedCapacityDescription,
+        gsi
+      }, null, json.padding));
       throw e;
     }
   }
 
   getUpdatedProvisionedThroughput(params) {
     try {
-      logger.debug('ConfigurableProvisioner.getUpdatedProvisionedThroughput');
+      invariant(typeof params !== 'undefined',
+        'Parameter \'params\' is not set');
 
       let newProvisionedThroughput = {
         ReadCapacityUnits: params.ProvisionedThroughput.ReadCapacityUnits,
@@ -138,9 +154,10 @@ export default class ConfigurableProvisioner {
 
       return newProvisionedThroughput;
     } catch (e) {
-      logger.warn(
-        'ConfigurableProvisioner.getUpdatedProvisionedThroughput failed',
-        JSON.stringify({params}));
+      warning(JSON.stringify({
+        class: 'ConfigurableProvisioner',
+        function: 'getUpdatedProvisionedThroughput', params
+      }, null, json.padding));
       throw e;
     }
   }

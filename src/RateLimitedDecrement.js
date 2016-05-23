@@ -1,9 +1,22 @@
+import { invariant } from '../src/Global';
+
 export default class RateLimitedDecrement {
 
   static isReadDecrementAllowed(
     data, calcNewValueFunc, minAdjustment,
     minGracePeriodAfterLastIncrementMinutes,
     minGracePeriodAfterLastDecrementMinutes) {
+
+    invariant(typeof data !== 'undefined', 'Parameter \'data\' is not set');
+    invariant(typeof calcNewValueFunc !== 'undefined',
+      'Parameter \'calcNewValueFunc\' is not set');
+    invariant(typeof minAdjustment !== 'undefined',
+      'Parameter \'minAdjustment\' is not set');
+    invariant(typeof minGracePeriodAfterLastIncrementMinutes !== 'undefined',
+      'Parameter \'minGracePeriodAfterLastIncrementMinutes\' is not set');
+    invariant(typeof minGracePeriodAfterLastDecrementMinutes !== 'undefined',
+      'Parameter \'minGracePeriodAfterLastDecrementMinutes\' is not set');
+
     if (this.getNextAllowedDecrementDate(
       data, minGracePeriodAfterLastIncrementMinutes,
       minGracePeriodAfterLastDecrementMinutes) > this.getNowDate()) {
@@ -30,6 +43,16 @@ export default class RateLimitedDecrement {
     data, calcNewValueFunc, minAdjustment,
     minGracePeriodAfterLastIncrementMinutes,
     minGracePeriodAfterLastDecrementMinutes) {
+
+    invariant(typeof data !== 'undefined', 'Parameter \'data\' is not set');
+    invariant(typeof calcNewValueFunc !== 'undefined',
+      'Parameter \'calcNewValueFunc\' is not set');
+    invariant(typeof minAdjustment !== 'undefined',
+      'Parameter \'minAdjustment\' is not set');
+    invariant(typeof minGracePeriodAfterLastIncrementMinutes !== 'undefined',
+      'Parameter \'minGracePeriodAfterLastIncrementMinutes\' is not set');
+    invariant(typeof minGracePeriodAfterLastDecrementMinutes !== 'undefined',
+      'Parameter \'minGracePeriodAfterLastDecrementMinutes\' is not set');
 
     if (this.getNextAllowedDecrementDate(
       data, minGracePeriodAfterLastIncrementMinutes,

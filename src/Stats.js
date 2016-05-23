@@ -14,7 +14,7 @@ export default class Stats {
       }
     }
 
-    this._stats.metrics = {};
+    this._stats._metrics = {};
   }
 
   toJSON() {

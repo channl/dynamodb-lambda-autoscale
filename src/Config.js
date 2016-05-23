@@ -1,14 +1,23 @@
 import ConfigurableProvisioner from './ConfigurableProvisioner';
 import RateLimitedDecrement from './RateLimitedDecrement';
 import Throughput from './Throughput';
+import { invariant } from '../src/Global';
 
 const provisioner = new ConfigurableProvisioner({
   readCapacity: {
     increment: {
-      isAdjustmentRequired:
-        (data, calcFunc) => // eslint-disable-line no-unused-vars
-          Throughput.getReadCapacityUtilisationPercent(data) > 90,
+      isAdjustmentRequired: (data, calcFunc) => {
+        invariant(typeof data !== 'undefined',
+          'Parameter \'data\' is not set');
+        invariant(typeof calcFunc !== 'undefined',
+          'Parameter \'calcFunc\' is not set');
+
+        return Throughput.getReadCapacityUtilisationPercent(data) > 90;
+      },
       calculateValue: data => {
+        invariant(typeof data !== 'undefined',
+          'Parameter \'data\' is not set');
+
         // adjustmentPercent or adjustmentUnits is used, which ever is bigger
         const adjustmentPercent = 100;
         const adjustmentUnits = 3;
@@ -21,6 +30,11 @@ const provisioner = new ConfigurableProvisioner({
     },
     decrement: {
       isAdjustmentRequired: (data, calcFunc) => {
+        invariant(typeof data !== 'undefined',
+          'Parameter \'data\' is not set');
+        invariant(typeof calcFunc !== 'undefined',
+          'Parameter \'calcFunc\' is not set');
+
         // minimum possible downward adjustment, there is no point
         // wasting 1 of 4 daily decrements on a small value
         const minAdjustment = 3;
@@ -32,16 +46,28 @@ const provisioner = new ConfigurableProvisioner({
             minGracePeriodAfterLastIncrementMinutes,
             minGracePeriodAfterLastDecrementMinutes);
       },
-      calculateValue: data =>
-        Math.max(data.ConsumedThroughput.ReadCapacityUnits, 1),
+      calculateValue: data => {
+        invariant(typeof data !== 'undefined',
+          'Parameter \'data\' is not set');
+
+        return Math.max(data.ConsumedThroughput.ReadCapacityUnits, 1);
+      },
     }
   },
   writeCapacity: {
     increment: {
-      isAdjustmentRequired:
-        (data, calcFunc) => // eslint-disable-line no-unused-vars
-          Throughput.getWriteCapacityUtilisationPercent(data) > 90,
+      isAdjustmentRequired: (data, calcFunc) => {
+        invariant(typeof data !== 'undefined',
+          'Parameter \'data\' is not set');
+        invariant(typeof calcFunc !== 'undefined',
+          'Parameter \'calcFunc\' is not set');
+
+        return Throughput.getWriteCapacityUtilisationPercent(data) > 90;
+      },
       calculateValue: data => {
+        invariant(typeof data !== 'undefined',
+          'Parameter \'data\' is not set');
+
         // adjustmentPercent or adjustmentUnits is used, which ever is bigger
         const adjustmentPercent = 100;
         const adjustmentUnits = 3;
@@ -54,6 +80,11 @@ const provisioner = new ConfigurableProvisioner({
     },
     decrement: {
       isAdjustmentRequired: (data, calcFunc) => {
+        invariant(typeof data !== 'undefined',
+          'Parameter \'data\' is not set');
+        invariant(typeof calcFunc !== 'undefined',
+          'Parameter \'calcFunc\' is not set');
+
         // minimum possible downward adjustment, there is no point
         // wasting 1 of 4 daily decrements on a small value
         const minAdjustment = 3;
@@ -65,8 +96,12 @@ const provisioner = new ConfigurableProvisioner({
             minGracePeriodAfterLastIncrementMinutes,
             minGracePeriodAfterLastDecrementMinutes);
       },
-      calculateValue: data =>
-        Math.max(data.ConsumedThroughput.WriteCapacityUnits, 1),
+      calculateValue: data => {
+        invariant(typeof data !== 'undefined',
+          'Parameter \'data\' is not set');
+
+        return Math.max(data.ConsumedThroughput.WriteCapacityUnits, 1);
+      },
     }
   }
 });
@@ -89,6 +124,12 @@ export default {
       }
     }
   },
-  getTableUpdate: (description, consumedCapacityDescription) =>
-    provisioner.getTableUpdate(description, consumedCapacityDescription)
+  getTableUpdate: (description, consumedCapacityDescription) => {
+    invariant(typeof description !== 'undefined',
+      'Parameter \'description\' is not set');
+    invariant(typeof consumedCapacityDescription !== 'undefined',
+      'Parameter \'consumedCapacityDescription\' is not set');
+
+    return provisioner.getTableUpdate(description, consumedCapacityDescription);
+  }
 };

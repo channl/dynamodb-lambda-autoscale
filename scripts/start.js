@@ -10,17 +10,23 @@ try {
           console.log(JSON.stringify(data));
         }
       } catch (e) {
+        console.log(e.stack);
         console.error(e);
       }
     },
     fail: function(e) {
+      console.log(e.stack);
       console.error(e);
     }
   };
 
-  var event = {};
+  var event = {
+    json: { padding: 2 }
+  };
+
   lambda.handler(event, context);
 
 } catch (e) {
+  console.log(e.stack);
   console.error(e);
 }

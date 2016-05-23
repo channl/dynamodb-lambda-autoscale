@@ -17,7 +17,7 @@ gulp.task('clean', function(cb) {
 
 gulp.task("webpack", function () {
   return gulp.src('src/Index.js')
-  .pipe(webpack( require('./webpack-prod.config.js') ))
+  .pipe(webpack( require('./webpack-dev.config.js') ))
   .pipe(gulp.dest('dist/'));
 });
 
@@ -40,7 +40,7 @@ gulp.task('npm', function() {
 gulp.task('env', function() {
   return gulp
     .src('./config.env.production')
-    .pipe(rename('.env'))
+    .pipe(rename('config.env'))
     .pipe(gulp.dest('./dist'));
 });
 

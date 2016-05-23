@@ -73,8 +73,8 @@ connection with, the use of this code.
   4. Select upload a zip file and select 'dist.zip' which you created earlier
   5. Set the handler to 'index.handler'
   6. Set the Role to 'DynamoDBLambdaAutoscale'
-  7. Set the Memory to the highest value to give the best performance
-  8. Set the Timeout to 5 seconds (higher possibly depending on the amount of tables you have)
+  7. Set the Memory to the lowest value initially but test different values at a later date to see how it affects performance
+  8. Set the Timeout to approximately 5 seconds (higher or lower depending on the amount of tables you have and the selected memory setting)
   9. Once the function is created, attach a 'scheduled event' event source and make it run every minute
 
 ## Configuration

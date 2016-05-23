@@ -4,19 +4,25 @@ import config from './Config';
 import dotenv from 'dotenv';
 import DynamoDB from './DynamoDB';
 import Stats from './Stats';
-import Global from './Global';
-const {
+import {
+  json,
   stats,
-  logger
-} = Global;
+  log,
+  invariant } from '../src/Global';
 
-logger.info('*** LAMBDA INIT ***');
+log('*** LAMBDA INIT ***');
 export let handler = async (event, context) => {
   try {
-    logger.info('*** LAMBDA START ***');
+    log('*** LAMBDA START ***');
+    let sw = stats.timer('Index.handler').start();
+
+    // In local mode the json padding can be overridden
+    if (event.json && event.json.padding) {
+      json.padding = event.json.padding;
+    }
 
     // Load environment variables
-    dotenv.load();
+    dotenv.config({path: 'config.env'});
 
     let db = new DynamoDB(
       config.connection.dynamoDB,
@@ -27,22 +33,22 @@ export let handler = async (event, context) => {
       .TableNames
       .map(async tableName => {
 
-        logger.info('Getting table description', tableName);
+        log('Getting table description', tableName);
         let tableDescription = await db.describeTableAsync(
           {TableName: tableName});
 
-        logger.info('Getting table consumed capacity description', tableName);
+        log('Getting table consumed capacity description', tableName);
         let consumedCapacityTableDescription = await db
           .describeTableConsumedCapacityAsync(tableDescription.Table, 1);
 
-        logger.info('Getting table update request', tableName);
+        log('Getting table update request', tableName);
         let tableUpdateRequest = config.getTableUpdate(tableDescription,
           consumedCapacityTableDescription);
 
         if (tableUpdateRequest) {
-          logger.info('Updating table', tableName);
+          log('Updating table', tableName);
           await db.updateTableAsync(tableUpdateRequest);
-          logger.info('Updated table', tableName);
+          log('Updated table', tableName);
         }
 
         // Log the monthlyEstimatedCost
@@ -66,10 +72,11 @@ export let handler = async (event, context) => {
       });
 
     let capacityItems = await Promise.all(capacityTasks);
+    sw.end();
 
     // Log stats
     let st = new Stats(stats);
-    logger.info(JSON.stringify(st.toJSON()));
+    let stJSON = st.toJSON();
     st.reset();
 
     // Log readable info
@@ -77,8 +84,8 @@ export let handler = async (event, context) => {
       .map(i => i.tableUpdateRequest)
       .filter(i => i !== null);
 
-    logger.info(updateRequests.length + ' table updates');
-    updateRequests.forEach(i => logger.debug(JSON.stringify(i, null, 2)));
+    // updateRequests
+    // .forEach(i => logger.debug(JSON.stringify(i, null, json.padding)));
 
     let totalMonthlyEstimatedCost = capacityItems
       .reduce((prev, curr) => prev + curr.monthlyEstimatedCost, 0);
@@ -92,11 +99,29 @@ export let handler = async (event, context) => {
       };
     }, {ReadCapacityUnits: 0, WriteCapacityUnits: 0});
 
-    logger.info(
-      JSON.stringify({TotalProvisionedThroughput: totalProvisionedThroughput}));
-
-    logger.info(
-      JSON.stringify({TotalMonthlyEstimatedCost: totalMonthlyEstimatedCost}));
+    log(JSON.stringify({
+      'Index.handler': {
+        mean: stJSON['Index.handler'].histogram.mean
+      },
+      'DynamoDB.listTablesAsync': {
+        mean: stJSON['DynamoDB.listTablesAsync'].histogram.mean,
+      },
+      'DynamoDB.describeTableAsync': {
+        mean: stJSON['DynamoDB.describeTableAsync'].histogram.mean,
+      },
+      'DynamoDB.describeTableConsumedCapacityAsync': {
+        mean: stJSON['DynamoDB.describeTableConsumedCapacityAsync']
+          .histogram.mean,
+      },
+      'CloudWatch.getMetricStatisticsAsync': {
+        mean: stJSON['CloudWatch.getMetricStatisticsAsync'].histogram.mean,
+      },
+      TableUpdates: {
+        count: updateRequests.length,
+      },
+      TotalProvisionedThroughput: totalProvisionedThroughput,
+      TotalMonthlyEstimatedCost: totalMonthlyEstimatedCost,
+    }, null, json.padding));
 
     // Return an empty response
     let response = null;
@@ -107,7 +132,7 @@ export let handler = async (event, context) => {
     }
 
   } catch (e) {
-    logger.error(e);
+    invariant(e);
     if (context) {
       context.fail(e);
     } else {
@@ -115,6 +140,6 @@ export let handler = async (event, context) => {
     }
 
   } finally {
-    logger.info('*** LAMBDA FINISH ***');
+    log('*** LAMBDA FINISH ***');
   }
 };

@@ -1,25 +1,32 @@
 import AWS from 'aws-sdk-promise';
-import Global from './Global';
 import CloudWatch from './CloudWatch';
-const {
+import {
+  json,
   stats,
-  logger
-} = Global;
+  warning,
+  invariant } from '../src/Global';
 
 export default class DynamoDB {
   constructor(dynamoOptions, cloudWatchOptions) {
+    invariant(typeof dynamoOptions !== 'undefined',
+      'Parameter \'dynamoOptions\' is not set');
+    invariant(typeof cloudWatchOptions !== 'undefined',
+      'Parameter \'cloudWatchOptions\' is not set');
+
     this._db = new AWS.DynamoDB(dynamoOptions);
     this._cw = new CloudWatch(cloudWatchOptions);
   }
 
   async listTablesAsync() {
-    logger.debug('DynamoDB.listTablesAsync');
     let sw = stats.timer('DynamoDB.listTablesAsync').start();
     try {
       let res = await this._db.listTables().promise();
       return res.data;
     } catch (ex) {
-      logger.warn('DynamoDB.listTablesAsync failed');
+      warning(JSON.stringify({
+        class: 'DynamoDB',
+        function: 'listTablesAsync'
+      }, null, json.padding));
       throw ex;
     } finally {
       sw.end();
@@ -27,15 +34,19 @@ export default class DynamoDB {
   }
 
   async describeTableAsync(params) {
-    logger.debug('DynamoDB.describeTableAsync');
     let sw = stats.timer('DynamoDB.describeTableAsync').start();
     try {
+      invariant(typeof params !== 'undefined',
+        'Parameter \'params\' is not set');
+
       let res = await this._db.describeTable(params).promise();
       return res.data;
     } catch (ex) {
-      logger.warn(
-        'DynamoDB.describeTableAsync failed',
-        JSON.stringify({params}));
+      warning(JSON.stringify({
+        class: 'DynamoDB',
+        function: 'describeTableAsync',
+        params
+      }, null, json.padding));
       throw ex;
     } finally {
       sw.end();
@@ -43,15 +54,19 @@ export default class DynamoDB {
   }
 
   async updateTableAsync(params) {
-    logger.debug('DynamoDB.updateTableAsync');
     let sw = stats.timer('DynamoDB.updateTableAsync').start();
     try {
+      invariant(typeof params !== 'undefined',
+        'Parameter \'params\' is not set');
+
       let res = this._db.updateTable(params).promise();
       return res.data;
     } catch (ex) {
-      logger.warn(
-        'DynamoDB.updateTableAsync failed',
-        JSON.stringify({params}));
+      warning(JSON.stringify({
+        class: 'DynamoDB',
+        function: 'updateTableAsync',
+        params
+      }, null, json.padding));
       throw ex;
     } finally {
       sw.end();
@@ -59,12 +74,16 @@ export default class DynamoDB {
   }
 
   async describeTableConsumedCapacityAsync(params, periodMinutes) {
-    logger.debug('DynamoDB.describeTableConsumedCapacityAsync');
     let sw = stats
       .timer('DynamoDB.describeTableConsumedCapacityAsync')
       .start();
 
     try {
+      invariant(typeof params !== 'undefined',
+        'Parameter \'params\' is not set');
+      invariant(typeof periodMinutes !== 'undefined',
+        'Parameter \'periodMinutes\' is not set');
+
       // Make all the requests concurrently
       let tableRead = this.getConsumedCapacityAsync(
         true, params.TableName, null, periodMinutes);
@@ -111,9 +130,12 @@ export default class DynamoDB {
         }
       };
     } catch (ex) {
-      logger.warn(
-        'DynamoDB.describeTableConsumedCapacityAsync failed',
-        JSON.stringify({params, periodMinutes}));
+      warning(JSON.stringify({
+        class: 'DynamoDB',
+        function: 'describeTableConsumedCapacityAsync',
+        params,
+        periodMinutes
+      }, null, json.padding));
       throw ex;
     } finally {
       sw.end();
@@ -121,8 +143,10 @@ export default class DynamoDB {
   }
 
   getTotalTableProvisionedThroughput(params) {
-    logger.debug('DynamoDB.getTotalTableProvisionedThroughput');
     try {
+      invariant(typeof params !== 'undefined',
+        'Parameter \'params\' is not set');
+
       let ReadCapacityUnits = params.Table
         .ProvisionedThroughput.ReadCapacityUnits;
 
@@ -144,16 +168,20 @@ export default class DynamoDB {
         WriteCapacityUnits
       };
     } catch (ex) {
-      logger.warn(
-        'DynamoDB.getTotalTableProvisionedThroughput failed',
-        JSON.stringify({params}));
+      warning(JSON.stringify({
+        class: 'DynamoDB',
+        function: 'getTotalTableProvisionedThroughput',
+        params
+      }, null, json.padding));
       throw ex;
     }
   }
 
   getMonthlyEstimatedTableCost(provisionedThroughput) {
-    logger.debug('DynamoDB.getMonthlyEstimatedTableCost');
     try {
+      invariant(typeof provisionedThroughput !== 'undefined',
+        'Parameter \'provisionedThroughput\' is not set');
+
       const averageHoursPerMonth = 720;
       const readCostPerHour = 0.0065;
       const readCostUnits = 50;
@@ -168,10 +196,11 @@ export default class DynamoDB {
 
       return readCost + writeCost;
     } catch (ex) {
-      logger.warn(
-        'DynamoDB.getMonthlyEstimatedTableCost failed',
-        JSON.stringify({provisionedThroughput}));
-
+      warning(JSON.stringify({
+        class: 'DynamoDB',
+        function: 'getMonthlyEstimatedTableCost',
+        provisionedThroughput
+      }, null, json.padding));
       throw ex;
     }
   }
@@ -187,8 +216,17 @@ export default class DynamoDB {
 
   async getConsumedCapacityAsync(
     isRead, tableName, globalSecondaryIndexName, periodMinutes) {
-    logger.debug('DynamoDB.getConsumedCapacityAsync');
+
     try {
+      invariant(typeof isRead !== 'undefined',
+        'Parameter \'isRead\' is not set');
+      invariant(typeof tableName !== 'undefined',
+        'Parameter \'tableName\' is not set');
+      invariant(typeof globalSecondaryIndexName !== 'undefined',
+        'Parameter \'globalSecondaryIndexName\' is not set');
+      invariant(typeof periodMinutes !== 'undefined',
+        'Parameter \'periodMinutes\' is not set');
+
       let EndTime = new Date();
       let StartTime = new Date();
       StartTime.setTime(EndTime - (60000 * periodMinutes));
@@ -213,10 +251,11 @@ export default class DynamoDB {
         data
       };
     } catch (ex) {
-      logger.warn(
-        'DynamoDB.getConsumedCapacityAsync failed',
-        JSON.stringify(
-          {isRead, tableName, globalSecondaryIndexName, periodMinutes}));
+      warning(JSON.stringify({
+        class: 'DynamoDB',
+        function: 'getConsumedCapacityAsync',
+        isRead, tableName, globalSecondaryIndexName, periodMinutes
+      }, null, json.padding));
       throw ex;
     }
   }

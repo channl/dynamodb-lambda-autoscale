@@ -23,7 +23,6 @@
     "debug": "node-debug ./scripts/Start.js"
   },
   "dependencies": {
-    "winston": "^2.2.0"
   },
   "devDependencies": {
     "aws-sdk-promise": "0.0.2",
@@ -47,6 +46,8 @@
     "webpack-stream": "^3.2.0",
     "stats-webpack-plugin": "^0.3.1",
     "eslint": "^2.9.0",
-    "eslint-plugin-babel": "^3.2.0"
+    "eslint-plugin-babel": "^3.2.0",
+    "invariant": "^2.2.1",
+    "warning": "^2.1.0"
   }
 }
