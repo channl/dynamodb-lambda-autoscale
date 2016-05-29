@@ -16,8 +16,7 @@ module.exports = function(options) {
 	var alias = {};
 	var aliasLoader = {};
 	var externals = [
-		{ 'aws-sdk': 'commonjs aws-sdk' },   // This is already available on the lambda server
-		{ 'winston': 'commonjs winston' }    // Winston looks for its own package.json
+		{ 'aws-sdk': 'commonjs aws-sdk' }   // This is already available on the lambda server
   ];
 	var modulesDirectories = ['node_modules', 'web_modules'];
 	var extensions = ["", ".web.js", ".js", ".jsx", ".json"];

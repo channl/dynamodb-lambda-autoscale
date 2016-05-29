@@ -140,7 +140,6 @@ implementation.
 
 This project has the following main dependencies:
 + aws-sdk - Access to AWS services
-+ winston - Logging
 + dotenv - Environment variable configuration useful for lambda
 + measured - Statistics gathering
 

@@ -1,16 +1,14 @@
 import measured from 'measured';
 import _warning from 'warning';
 import _invariant from 'invariant';
-import { Console } from 'console';
-
-const logger = new Console(process.stdout, process.stderr);
 
 export const json = { padding: 0 };
 
 export const stats = measured.createCollection();
 
 export const log = (...params) => {
-  logger.log(...params);
+  // eslint-disable-next-line no-console
+  console.log(...params);
 };
 
 export const warning = (predicateOrValue, value) => {

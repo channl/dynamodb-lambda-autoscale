@@ -20,6 +20,10 @@ export default class Throughput {
     invariant(typeof max !== 'undefined', 'Parameter \'max\' is not set');
     invariant(typeof min !== 'undefined', 'Parameter \'min\' is not set');
 
+    if (data.ProvisionedThroughput.ReadCapacityUnits < min) {
+      return min;
+    }
+
     let units = Math.round(
       data.ProvisionedThroughput.ReadCapacityUnits * (adjustmentPercent / 100));
     units = Math.max(units, adjustmentUnits);
@@ -41,13 +45,15 @@ export default class Throughput {
     invariant(typeof data !== 'undefined', 'Parameter \'data\' is not set');
     invariant(typeof adjustmentPercent !== 'undefined',
       'Parameter \'adjustmentPercent\' is not set');
-    invariant(typeof adjustmentUnits !== 'undefined',
-      'Parameter \'adjustmentUnits\' is not set');
+    invariant(typeof adjustmentUnits !== 'undefined', 'Parameter \'adjustmentUnits\' is not set');
     invariant(typeof max !== 'undefined', 'Parameter \'max\' is not set');
     invariant(typeof min !== 'undefined', 'Parameter \'min\' is not set');
 
-    let units = Math.round(
-      data.ProvisionedThroughput.WriteCapacityUnits *
+    if (data.ProvisionedThroughput.WriteCapacityUnits < min) {
+      return min;
+    }
+
+    let units = Math.round(data.ProvisionedThroughput.WriteCapacityUnits *
       (adjustmentPercent / 100));
 
     units = Math.max(units, adjustmentUnits);
