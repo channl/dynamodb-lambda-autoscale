@@ -29,6 +29,7 @@ const config = {
     min: 1,
     max: 10,
     increment: {
+      thresholdPercent: 90,
       adjustmentPercent: 100,
       adjustmentUnits: 3,
     },
