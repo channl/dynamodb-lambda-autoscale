@@ -24,7 +24,7 @@ gulp.task("webpack", function () {
 // The js task could be replaced with gulp-coffee as desired.
 gulp.task("js", function () {
   return gulp
-    .src("dist/Index.js")
+    .src("dist/index.js")
     .pipe(gulp.dest("dist/"));
 });
 

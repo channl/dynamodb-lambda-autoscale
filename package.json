@@ -10,7 +10,7 @@
     "type": "git",
     "url": "http://github.com/channl/dynamodb-lambda-autoscale.git"
   },
-  "main": "dist/Index.js",
+  "main": "dist/index.js",
   "options": {
     "mocha": "--require resources/mocha-bootload src/**/__tests__/**/*.js"
   },
@@ -19,8 +19,8 @@
     "lint": "eslint src",
     "check": "flow check",
     "build": "gulp dist",
-    "start": "node ./scripts/Start.js",
-    "debug": "node-debug ./scripts/Start.js"
+    "start": "node ./scripts/start.js",
+    "debug": "node-debug ./scripts/start.js"
   },
   "dependencies": {
   },

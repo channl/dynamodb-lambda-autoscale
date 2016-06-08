@@ -1,5 +1,5 @@
 try {
-  var lambda = require('../dist/Index.js');
+  var lambda = require('../dist/index.js');
 
   process.chdir('./dist');
 
