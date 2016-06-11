@@ -1,10 +1,12 @@
+/* eslint-disable no-console */
+
 try {
   var lambda = require('../dist/index.js');
 
   process.chdir('./dist');
 
   var context = {
-    succeed: function(data) {
+    succeed: data => {
       try {
         if (data) {
           console.log(JSON.stringify(data));
@@ -14,7 +16,7 @@ try {
         console.error(e);
       }
     },
-    fail: function(e) {
+    fail: e => {
       console.log(e.stack);
       console.error(e);
     }

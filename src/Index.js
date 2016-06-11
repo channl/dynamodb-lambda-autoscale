@@ -1,17 +1,21 @@
-import babelPolyfill  // eslint-disable-line no-unused-vars
-  from 'babel-polyfill';
+/* @flow */
+/* eslint-disable */
+// $FlowIgnore
+import babelPolyfill from 'babel-polyfill';
+/* eslint-enable */
 import config from './Config';
+// $FlowIgnore
 import dotenv from 'dotenv';
 import DynamoDB from './DynamoDB';
+import CloudWatch from './CloudWatch';
 import Stats from './Stats';
-import {
-  json,
-  stats,
-  log,
-  invariant } from '../src/Global';
+import CostEstimation from './CostEstimation';
+import Throughput from './Throughput';
+import CapacityCalculator from './CapacityCalculator';
+import { json, stats, log, invariant } from '../src/Global';
 
 log('*** LAMBDA INIT ***');
-export let handler = async (event, context) => {
+export let handler = async (event: any, context: any) => {
   try {
     log('*** LAMBDA START ***');
     let sw = stats.timer('Index.handler').start();
@@ -24,22 +28,22 @@ export let handler = async (event, context) => {
     // Load environment variables
     dotenv.config({path: 'config.env'});
 
-    let db = new DynamoDB(
-      config.connection.dynamoDB,
-      config.connection.cloudWatch);
+    let db = new DynamoDB(config.connection.dynamoDB);
+    let cw = new CloudWatch(config.connection.cloudWatch);
+    let cc = new CapacityCalculator(cw);
 
-    let tables = await db.listTablesAsync();
-    let capacityTasks = tables
-      .TableNames
+    log('Getting table names');
+    let tableNames = await config.getTableNamesAsync(db);
+    let capacityTasks = tableNames
       .map(async tableName => {
 
         log('Getting table description', tableName);
-        let tableDescription = await db.describeTableAsync(
-          {TableName: tableName});
+        let describeTableResponse = await db.describeTableAsync({TableName: tableName});
+        let tableDescription = describeTableResponse.Table;
 
         log('Getting table consumed capacity description', tableName);
-        let consumedCapacityTableDescription = await db
-          .describeTableConsumedCapacityAsync(tableDescription.Table, 1);
+        let consumedCapacityTableDescription = await cc
+          .describeTableConsumedCapacityAsync(tableDescription, 1);
 
         log('Getting table update request', tableName);
         let tableUpdateRequest = config.getTableUpdate(tableDescription,
@@ -52,11 +56,11 @@ export let handler = async (event, context) => {
         }
 
         // Log the monthlyEstimatedCost
-        let totalTableProvisionedThroughput = db
+        let totalTableProvisionedThroughput = Throughput
           .getTotalTableProvisionedThroughput(tableDescription);
 
-        let monthlyEstimatedCost = db
-        .getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
+        let monthlyEstimatedCost = CostEstimation
+          .getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
 
         stats
           .counter('DynamoDB.monthlyEstimatedCost')
@@ -83,9 +87,6 @@ export let handler = async (event, context) => {
     let updateRequests = capacityItems
       .map(i => i.tableUpdateRequest)
       .filter(i => i !== null);
-
-    // updateRequests
-    // .forEach(i => logger.debug(JSON.stringify(i, null, json.padding)));
 
     let totalMonthlyEstimatedCost = capacityItems
       .reduce((prev, curr) => prev + curr.monthlyEstimatedCost, 0);

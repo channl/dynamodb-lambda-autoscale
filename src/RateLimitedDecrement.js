@@ -1,3 +1,4 @@
+/* @flow */
 import { invariant } from '../src/Global';
 
 export default class RateLimitedDecrement {
@@ -150,7 +151,8 @@ export default class RateLimitedDecrement {
   }
 
   static parseDate(value) {
-    if (typeof value === 'undefined' || value === null) {
+    // eslint-disable-next-line eqeqeq
+    if (typeof value === 'undefined' || value == null) {
       return new Date(-8640000000000000);
     }
 

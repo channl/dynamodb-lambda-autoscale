@@ -1,18 +1,30 @@
-import {
-  json,
-  warning,
-  invariant } from '../src/Global';
+/* @flow */
+import { json, warning, invariant } from './Global';
+import type {
+  TableDescription,
+  TableConsumedCapacityDescription,
+  GlobalSecondaryIndex,
+  UpdateTableRequest,
+  TableProvisionedAndConsumedThroughput,
+  GlobalSecondaryIndexUpdate,
+  Throughput,
+  ConfigurableProvisionerConfig,
+} from './FlowTypes';
 
 export default class ConfigurableProvisioner {
+  _config: ConfigurableProvisionerConfig;
 
-  constructor(config) {
+  constructor(config: ConfigurableProvisionerConfig) {
     invariant(typeof config !== 'undefined',
       'Parameter \'config\' is not set');
 
-    this.config = config;
+    this._config = config;
   }
 
-  getTableUpdate(tableDescription, tableConsumedCapacityDescription) {
+  getTableUpdate(
+    tableDescription: TableDescription,
+    tableConsumedCapacityDescription: TableConsumedCapacityDescription)
+    : ?UpdateTableRequest {
     try {
       invariant(typeof tableDescription !== 'undefined',
         'Parameter \'tableDescription\' is not set');
@@ -20,36 +32,35 @@ export default class ConfigurableProvisioner {
         'Parameter \'tableConsumedCapacityDescription\' is not set');
 
       let tableData = {
-        TableName: tableDescription.Table.TableName,
-        ProvisionedThroughput: tableDescription.Table.ProvisionedThroughput,
-        ConsumedThroughput:
-          tableConsumedCapacityDescription.Table.ConsumedThroughput
+        TableName: tableDescription.TableName,
+        ProvisionedThroughput: tableDescription.ProvisionedThroughput,
+        ConsumedThroughput: tableConsumedCapacityDescription.ConsumedThroughput
       };
 
-      let provisionedThroughput = this
-        .getUpdatedProvisionedThroughput(tableData);
+      let provisionedThroughput = this.getUpdatedProvisionedThroughput(tableData);
 
-      let gsis = tableDescription.Table.GlobalSecondaryIndexes || [];
+      let gsis = tableDescription.GlobalSecondaryIndexes || [];
       let globalSecondaryIndexUpdates = gsis
+        // $FlowIgnore
         .map(gsi => this.getGlobalSecondaryIndexUpdate(
           tableDescription, tableConsumedCapacityDescription, gsi))
         .filter(i => i !== null);
 
-      if (!provisionedThroughput && (globalSecondaryIndexUpdates === null ||
+      // eslint-disable-next-line eqeqeq
+      if (!provisionedThroughput && (globalSecondaryIndexUpdates == null ||
         globalSecondaryIndexUpdates.length === 0)) {
         return null;
       }
 
-      let result = {
-        TableName: tableDescription.Table.TableName
+      let result: UpdateTableRequest = {
+        TableName: tableDescription.TableName
       };
 
       if (provisionedThroughput) {
         result.ProvisionedThroughput = provisionedThroughput;
       }
 
-      if (globalSecondaryIndexUpdates &&
-        globalSecondaryIndexUpdates.length > 0) {
+      if (globalSecondaryIndexUpdates && globalSecondaryIndexUpdates.length > 0) {
         result.GlobalSecondaryIndexUpdates = globalSecondaryIndexUpdates;
       }
 
@@ -66,7 +77,9 @@ export default class ConfigurableProvisioner {
   }
 
   getGlobalSecondaryIndexUpdate(
-    tableDescription, tableConsumedCapacityDescription, gsi) {
+    tableDescription: TableDescription,
+    tableConsumedCapacityDescription: TableConsumedCapacityDescription,
+    gsi: GlobalSecondaryIndex): ?GlobalSecondaryIndexUpdate {
     try {
       invariant(typeof tableDescription !== 'undefined',
         'Parameter \'tableDescription\' is not set');
@@ -76,16 +89,18 @@ export default class ConfigurableProvisioner {
         'Parameter \'gsi\' is not set');
 
       let gsicc = tableConsumedCapacityDescription
-        .Table.GlobalSecondaryIndexes.find(i => i.IndexName === gsi.IndexName);
+        .GlobalSecondaryIndexes
+        .find(i => i.IndexName === gsi.IndexName);
 
       let provisionedThroughput = this.getUpdatedProvisionedThroughput({
-        TableName: tableDescription.Table.TableName,
+        TableName: tableDescription.TableName,
         IndexName: gsicc.IndexName,
         ProvisionedThroughput: gsi.ProvisionedThroughput,
         ConsumedThroughput: gsicc.ConsumedThroughput
       });
 
-      if (provisionedThroughput === null) {
+      // eslint-disable-next-line eqeqeq
+      if (provisionedThroughput == null) {
         return null;
       }
 
@@ -107,10 +122,10 @@ export default class ConfigurableProvisioner {
     }
   }
 
-  getUpdatedProvisionedThroughput(params) {
+  getUpdatedProvisionedThroughput(params: TableProvisionedAndConsumedThroughput)
+    : ?Throughput {
     try {
-      invariant(typeof params !== 'undefined',
-        'Parameter \'params\' is not set');
+      invariant(typeof params !== 'undefined', 'Parameter \'params\' is not set');
 
       let newProvisionedThroughput = {
         ReadCapacityUnits: params.ProvisionedThroughput.ReadCapacityUnits,
@@ -118,30 +133,30 @@ export default class ConfigurableProvisioner {
       };
 
       // Adjust read capacity
-      if (this.config.readCapacity.increment.isAdjustmentRequired(
-        params, this.config.readCapacity.increment.calculateValue)) {
+      if (this._config.readCapacity.increment.isAdjustmentRequired(
+        params, this._config.readCapacity.increment.calculateValue)) {
 
-        newProvisionedThroughput.ReadCapacityUnits = this.config
+        newProvisionedThroughput.ReadCapacityUnits = this._config
           .readCapacity.increment.calculateValue(params);
 
-      } else if (this.config.readCapacity.decrement.isAdjustmentRequired(
-        params, this.config.readCapacity.decrement.calculateValue)) {
+      } else if (this._config.readCapacity.decrement.isAdjustmentRequired(
+        params, this._config.readCapacity.decrement.calculateValue)) {
 
-        newProvisionedThroughput.ReadCapacityUnits = this.config
+        newProvisionedThroughput.ReadCapacityUnits = this._config
           .readCapacity.decrement.calculateValue(params);
       }
 
       // Adjust write capacity
-      if (this.config.writeCapacity.increment.isAdjustmentRequired(
-        params, this.config.writeCapacity.increment.calculateValue)) {
+      if (this._config.writeCapacity.increment.isAdjustmentRequired(
+        params, this._config.writeCapacity.increment.calculateValue)) {
 
-        newProvisionedThroughput.WriteCapacityUnits = this.config
+        newProvisionedThroughput.WriteCapacityUnits = this._config
           .writeCapacity.increment.calculateValue(params);
 
-      } else if (this.config.writeCapacity.decrement.isAdjustmentRequired(
-        params, this.config.writeCapacity.decrement.calculateValue)) {
+      } else if (this._config.writeCapacity.decrement.isAdjustmentRequired(
+        params, this._config.writeCapacity.decrement.calculateValue)) {
 
-        newProvisionedThroughput.WriteCapacityUnits = this.config
+        newProvisionedThroughput.WriteCapacityUnits = this._config
           .writeCapacity.decrement.calculateValue(params);
       }
 

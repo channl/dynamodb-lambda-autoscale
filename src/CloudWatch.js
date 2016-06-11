@@ -1,18 +1,23 @@
+/* @flow */
 import AWS from 'aws-sdk-promise';
-import {
-  json,
-  stats,
-  warning,
-  invariant } from '../src/Global';
+import { json, stats, warning, invariant } from './Global';
+import type {
+  CloudWatchOptions,
+  GetMetricStatisticsRequest,
+  GetMetricStatisticsResponse,
+} from './FlowTypes';
 
 export default class CloudWatch {
-  constructor(cloudWatchOptions) {
+  _cw: AWS.CloudWatch;
+
+  constructor(cloudWatchOptions: CloudWatchOptions) {
     invariant(typeof cloudWatchOptions !== 'undefined',
       'Parameter \'cloudWatchOptions\' is not set');
     this._cw = new AWS.CloudWatch(cloudWatchOptions);
   }
 
-  async getMetricStatisticsAsync(params) {
+  async getMetricStatisticsAsync(params: GetMetricStatisticsRequest)
+    : Promise<GetMetricStatisticsResponse> {
     let sw = stats.timer('CloudWatch.getMetricStatisticsAsync').start();
     try {
       invariant(typeof params !== 'undefined',

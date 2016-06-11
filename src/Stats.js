@@ -1,6 +1,8 @@
+/* @flow */
 export default class Stats {
+  _stats: any;
 
-  constructor(stats) {
+  constructor(stats: any) {
     this._stats = stats;
   }
 
@@ -51,15 +53,15 @@ export default class Stats {
     return statsAsStrings;
   }
 
-  padRight(value, length) {
+  padRight(value: string, length: number) {
     return value + Array(length - value.length).join(' ');
   }
 
-  padLeft(value, paddingValue) {
+  padLeft(value: string, paddingValue: string) {
     return String(paddingValue + value).slice(-paddingValue.length);
   }
 
-  to2Dec(value) {
+  to2Dec(value: number) {
     return parseFloat(parseFloat(Math.round(value * 100) / 100).toFixed(2));
   }
 }

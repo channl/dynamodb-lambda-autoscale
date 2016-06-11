@@ -1,8 +1,10 @@
+/* @flow */
 import ConfigurableProvisioner from './ConfigurableProvisioner';
 import RateLimitedDecrement from './RateLimitedDecrement';
 import Throughput from './Throughput';
-import { invariant } from '../src/Global';
-
+import { log, invariant } from './Global';
+import DynamoDB from './DynamoDB';
+import type { TableDescription, TableConsumedCapacityDescription, Config } from './FlowTypes';
 // NOTES
 // - 'adjustmentPercent' or 'adjustmentUnits' is used, which ever is bigger
 // - 'min' and 'max' are hard limits
@@ -49,13 +51,29 @@ const provisioner = new ConfigurableProvisioner({
         invariant(typeof data !== 'undefined', 'Parameter \'data\' is not set');
         invariant(typeof calcFunc !== 'undefined', 'Parameter \'calcFunc\' is not set');
 
-        let isAboveThreshold = Throughput.getReadCapacityUtilisationPercent(data) >
-          config.readCapacity.increment.thresholdPercent;
-
+        let readCapacityPercent = Throughput.getReadCapacityUtilisationPercent(data);
+        let isAboveThreshold = readCapacityPercent > config.readCapacity.increment.thresholdPercent;
         let isBelowMin = data.ProvisionedThroughput.ReadCapacityUnits <
           config.readCapacity.min;
+        let isAdjustmentRequired = isAboveThreshold || isBelowMin;
 
-        return isAboveThreshold || isBelowMin;
+        let logName = typeof data.IndexName === 'undefined' ? data.TableName :
+          data.TableName + '.' + data.IndexName;
+
+        if (isAboveThreshold) {
+          log(logName + ' is at ' + readCapacityPercent +
+            '% read capacity and above threshold of ' +
+            config.readCapacity.increment.thresholdPercent + '%');
+        } else if (isBelowMin) {
+          log(logName + ' is at ' + readCapacityPercent +
+            '% read capacity and below minimum of ' + config.readCapacity.min + '%');
+        } else if (readCapacityPercent > 0) {
+          log(logName + ' is at ' + readCapacityPercent +
+            '% read capacity and within minimum of ' + config.readCapacity.min +
+            '% and threshold of ' + config.readCapacity.increment.thresholdPercent + '%');
+        }
+
+        return isAdjustmentRequired;
       },
       calculateValue: data => {
         invariant(typeof data !== 'undefined', 'Parameter \'data\' is not set');
@@ -81,18 +99,20 @@ const provisioner = new ConfigurableProvisioner({
             config.readCapacity.decrement.minGracePeriodAfterLastIncrementMinutes,
             config.readCapacity.decrement.minGracePeriodAfterLastDecrementMinutes);
 
-        let isBelowThreshold = Throughput.getReadCapacityUtilisationPercent(data) <
-          config.readCapacity.decrement.thresholdPercent;
-
+        let readCapacityPercent = Throughput.getReadCapacityUtilisationPercent(data);
+        let isBelowThreshold = readCapacityPercent < config.readCapacity.decrement.thresholdPercent;
         let isAboveMax = data.ProvisionedThroughput.ReadCapacityUnits >
           config.readCapacity.max;
 
-        return isReadDecrementAllowed && (isBelowThreshold || isAboveMax);
+        let isAdjustmentWanted = isBelowThreshold || isAboveMax;
+        let isAdjustmentRequired = isReadDecrementAllowed && isAdjustmentWanted;
+        return isAdjustmentRequired;
       },
       calculateValue: data => {
         invariant(typeof data !== 'undefined', 'Parameter \'data\' is not set');
 
-        return Math.max(data.ConsumedThroughput.ReadCapacityUnits, config.readCapacity.min);
+        return Math.round(Math.max(data.ConsumedThroughput.ReadCapacityUnits,
+          config.readCapacity.min));
       },
     }
   },
@@ -102,13 +122,29 @@ const provisioner = new ConfigurableProvisioner({
         invariant(typeof data !== 'undefined', 'Parameter \'data\' is not set');
         invariant(typeof calcFunc !== 'undefined', 'Parameter \'calcFunc\' is not set');
 
-        let isAboveThreshold = Throughput.getWriteCapacityUtilisationPercent(data) >
+        let writeCapacityPercent = Throughput.getWriteCapacityUtilisationPercent(data);
+        let isAboveThreshold = writeCapacityPercent >
           config.writeCapacity.increment.thresholdPercent;
+        let isBelowMin = data.ProvisionedThroughput.WriteCapacityUnits < config.writeCapacity.min;
+        let isAdjustmentRequired = isAboveThreshold || isBelowMin;
 
-        let isBelowMin = data.ProvisionedThroughput.WriteCapacityUnits <
-          config.writeCapacity.min;
+        let logName = typeof data.IndexName === 'undefined' ? data.TableName :
+          data.TableName + '.' + data.IndexName;
 
-        return isAboveThreshold || isBelowMin;
+        if (isAboveThreshold) {
+          log(logName + ' is at ' + writeCapacityPercent +
+            '% write capacity and above threshold of ' +
+            config.writeCapacity.increment.thresholdPercent + '%');
+        } else if (isBelowMin) {
+          log(logName + ' is at ' + writeCapacityPercent +
+            '% write capacity and below minimum of ' + config.writeCapacity.min + '%');
+        } else if (writeCapacityPercent > 0) {
+          log(logName + ' is at ' + writeCapacityPercent +
+            '% write capacity and within minimum of ' + config.writeCapacity.min +
+            '% and threshold of ' + config.writeCapacity.increment.thresholdPercent + '%');
+        }
+
+        return isAdjustmentRequired;
       },
       calculateValue: data => {
         invariant(typeof data !== 'undefined', 'Parameter \'data\' is not set');
@@ -134,24 +170,26 @@ const provisioner = new ConfigurableProvisioner({
             config.writeCapacity.decrement.minGracePeriodAfterLastIncrementMinutes,
             config.writeCapacity.decrement.minGracePeriodAfterLastDecrementMinutes);
 
-        let isBelowThreshold = Throughput.getWriteCapacityUtilisationPercent(data) <
+        let writeCapacityPercent = Throughput.getWriteCapacityUtilisationPercent(data);
+        let isBelowThreshold = writeCapacityPercent <
           config.writeCapacity.decrement.thresholdPercent;
 
-        let isAboveMax = data.ProvisionedThroughput.WriteCapacityUnits >
-          config.writeCapacity.max;
-
-        return isWriteDecrementAllowed && (isBelowThreshold || isAboveMax);
+        let isAboveMax = data.ProvisionedThroughput.WriteCapacityUnits > config.writeCapacity.max;
+        let isAdjustmentWanted = isBelowThreshold || isAboveMax;
+        let isAdjustmentRequired = isWriteDecrementAllowed && isAdjustmentWanted;
+        return isAdjustmentRequired;
       },
       calculateValue: data => {
         invariant(typeof data !== 'undefined', 'Parameter \'data\' is not set');
 
-        return Math.max(data.ConsumedThroughput.WriteCapacityUnits, config.writeCapacity.min);
+        return Math.round(Math.max(data.ConsumedThroughput.WriteCapacityUnits,
+          config.writeCapacity.min));
       },
     }
   }
 });
 
-export default {
+let configuration: Config = {
   connection: {
     dynamoDB: {
       apiVersion: '2012-08-10',
@@ -169,11 +207,22 @@ export default {
       }
     }
   },
-  getTableUpdate: (description, consumedCapacityDescription) => {
+  getTableNamesAsync: async (db: DynamoDB) => {
+
+    // Ensure all tables are in scope for autoscaling
+    let listTablesResponse = await db.listTablesAsync();
+    return listTablesResponse.TableNames;
+  },
+  getTableUpdate: (
+    description: TableDescription,
+    consumedCapacityDescription: TableConsumedCapacityDescription) => {
     invariant(typeof description !== 'undefined', 'Parameter \'description\' is not set');
     invariant(typeof consumedCapacityDescription !== 'undefined',
       'Parameter \'consumedCapacityDescription\' is not set');
 
+    // Construct a table update request to send to AWS
     return provisioner.getTableUpdate(description, consumedCapacityDescription);
   }
 };
+
+export default configuration;

@@ -1,4 +1,6 @@
-import { invariant } from '../src/Global';
+/* @flow */
+import { json, warning, invariant } from './Global';
+import type { TableDescription } from './FlowTypes';
 
 export default class Throughput {
   static getReadCapacityUtilisationPercent(data) {
@@ -21,14 +23,14 @@ export default class Throughput {
     invariant(typeof min !== 'undefined', 'Parameter \'min\' is not set');
 
     if (data.ProvisionedThroughput.ReadCapacityUnits < min) {
-      return min;
+      return Math.round(min);
     }
 
     let units = Math.round(
       data.ProvisionedThroughput.ReadCapacityUnits * (adjustmentPercent / 100));
     units = Math.max(units, adjustmentUnits);
     let newValue = data.ProvisionedThroughput.ReadCapacityUnits + units;
-    return Math.max(Math.min(newValue, max), min);
+    return Math.round(Math.max(Math.min(newValue, max), min));
   }
 
   static getWriteCapacityUtilisationPercent(data) {
@@ -50,7 +52,7 @@ export default class Throughput {
     invariant(typeof min !== 'undefined', 'Parameter \'min\' is not set');
 
     if (data.ProvisionedThroughput.WriteCapacityUnits < min) {
-      return min;
+      return Math.round(min);
     }
 
     let units = Math.round(data.ProvisionedThroughput.WriteCapacityUnits *
@@ -58,6 +60,37 @@ export default class Throughput {
 
     units = Math.max(units, adjustmentUnits);
     let newValue = data.ProvisionedThroughput.WriteCapacityUnits + units;
-    return Math.max(Math.min(newValue, max), min);
+    return Math.round(Math.max(Math.min(newValue, max), min));
+  }
+
+  static getTotalTableProvisionedThroughput(params: TableDescription) {
+    try {
+      invariant(typeof params !== 'undefined', 'Parameter \'params\' is not set');
+
+      let ReadCapacityUnits = params.ProvisionedThroughput.ReadCapacityUnits;
+      let WriteCapacityUnits = params.ProvisionedThroughput.WriteCapacityUnits;
+
+      if (params.GlobalSecondaryIndexes) {
+        ReadCapacityUnits += params.GlobalSecondaryIndexes
+          .reduce((prev, curr) =>
+            prev + curr.ProvisionedThroughput.ReadCapacityUnits, 0);
+
+        WriteCapacityUnits += params.GlobalSecondaryIndexes
+          .reduce((prev, curr) =>
+            prev + curr.ProvisionedThroughput.WriteCapacityUnits, 0);
+      }
+
+      return {
+        ReadCapacityUnits,
+        WriteCapacityUnits
+      };
+    } catch (ex) {
+      warning(JSON.stringify({
+        class: 'Throughput',
+        function: 'getTotalTableProvisionedThroughput',
+        params
+      }, null, json.padding));
+      throw ex;
+    }
   }
 }
