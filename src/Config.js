@@ -53,25 +53,32 @@ const provisioner = new ConfigurableProvisioner({
 
         let readCapacityPercent = Throughput.getReadCapacityUtilisationPercent(data);
         let isAboveThreshold = readCapacityPercent > config.readCapacity.increment.thresholdPercent;
-        let isBelowMin = data.ProvisionedThroughput.ReadCapacityUnits <
-          config.readCapacity.min;
+        let isBelowMin = data.ProvisionedThroughput.ReadCapacityUnits < config.readCapacity.min;
+        let isAtMax = data.ProvisionedThroughput.ReadCapacityUnits >= config.readCapacity.max;
         let isAdjustmentRequired = isAboveThreshold || isBelowMin;
 
-        let logName = typeof data.IndexName === 'undefined' ? data.TableName :
+        // Logging
+        let logMessage = typeof data.IndexName === 'undefined' ? data.TableName :
           data.TableName + '.' + data.IndexName;
-
-        if (isAboveThreshold) {
-          log(logName + ' is at ' + readCapacityPercent +
-            '% read capacity and above threshold of ' +
-            config.readCapacity.increment.thresholdPercent + '%');
-        } else if (isBelowMin) {
-          log(logName + ' is at ' + readCapacityPercent +
-            '% read capacity and below minimum of ' + config.readCapacity.min + '%');
-        } else if (readCapacityPercent > 0) {
-          log(logName + ' is at ' + readCapacityPercent +
-            '% read capacity and within minimum of ' + config.readCapacity.min +
-            '% and threshold of ' + config.readCapacity.increment.thresholdPercent + '%');
+        logMessage += ' is consuming ' + data.ConsumedThroughput.ReadCapacityUnits + ' of ' +
+          data.ProvisionedThroughput.ReadCapacityUnits + ' (' + readCapacityPercent +
+          '%) read capacity units';
+        if (isAtMax) {
+          logMessage += ' and is already at max allowed ' + config.readCapacity.max + ' units';
         }
+        if (isAboveThreshold && !isAtMax) {
+          logMessage += ' and is above maximum threshold of ' +
+            config.readCapacity.increment.thresholdPercent + '%';
+        }
+        if (isBelowMin) {
+          logMessage += ' and is below the min allowed ' + config.readCapacity.min + ' units';
+        }
+        if (isAdjustmentRequired) {
+          logMessage += ' so an increment is REQUIRED';
+        } else {
+          logMessage += ' so an increment is not required';
+        }
+        log(logMessage);
 
         return isAdjustmentRequired;
       },
@@ -101,11 +108,37 @@ const provisioner = new ConfigurableProvisioner({
 
         let readCapacityPercent = Throughput.getReadCapacityUtilisationPercent(data);
         let isBelowThreshold = readCapacityPercent < config.readCapacity.decrement.thresholdPercent;
-        let isAboveMax = data.ProvisionedThroughput.ReadCapacityUnits >
-          config.readCapacity.max;
-
-        let isAdjustmentWanted = isBelowThreshold || isAboveMax;
+        let isAboveMax = data.ProvisionedThroughput.ReadCapacityUnits > config.readCapacity.max;
+        let isAtMin = data.ProvisionedThroughput.ReadCapacityUnits <= config.readCapacity.min;
+        let isAdjustmentWanted = (isBelowThreshold || isAboveMax) && !isAtMin;
         let isAdjustmentRequired = isReadDecrementAllowed && isAdjustmentWanted;
+
+        // Logging
+        let logMessage = typeof data.IndexName === 'undefined' ? data.TableName :
+          data.TableName + '.' + data.IndexName;
+        logMessage += ' is consuming ' + data.ConsumedThroughput.ReadCapacityUnits + ' of ' +
+          data.ProvisionedThroughput.ReadCapacityUnits + ' (' + readCapacityPercent +
+          '%) read capacity units';
+        if (isAtMin) {
+          logMessage += ' and is already at min allowed ' + config.readCapacity.min + ' units';
+        }
+        if (isBelowThreshold && !isAtMin) {
+          logMessage += ' and is below minimum threshold of ' +
+            config.readCapacity.decrement.thresholdPercent + '%';
+        }
+        if (isAboveMax) {
+          logMessage += ' and is above the max allowed ' + config.readCapacity.max + ' units';
+        }
+        if (isAdjustmentWanted) {
+          logMessage += ' so a decrement is REQUESTED';
+        } else {
+          logMessage += ' so a decrement is not required';
+        }
+        if (isAdjustmentWanted && !isReadDecrementAllowed) {
+          logMessage += ' but has been DISALLOWED due to rate limiting';
+        }
+        log(logMessage);
+
         return isAdjustmentRequired;
       },
       calculateValue: data => {
@@ -125,24 +158,32 @@ const provisioner = new ConfigurableProvisioner({
         let writeCapacityPercent = Throughput.getWriteCapacityUtilisationPercent(data);
         let isAboveThreshold = writeCapacityPercent >
           config.writeCapacity.increment.thresholdPercent;
+        let isAtMax = data.ProvisionedThroughput.WriteCapacityUnits >= config.writeCapacity.max;
         let isBelowMin = data.ProvisionedThroughput.WriteCapacityUnits < config.writeCapacity.min;
         let isAdjustmentRequired = isAboveThreshold || isBelowMin;
 
-        let logName = typeof data.IndexName === 'undefined' ? data.TableName :
+        // Logging
+        let logMessage = typeof data.IndexName === 'undefined' ? data.TableName :
           data.TableName + '.' + data.IndexName;
-
-        if (isAboveThreshold) {
-          log(logName + ' is at ' + writeCapacityPercent +
-            '% write capacity and above threshold of ' +
-            config.writeCapacity.increment.thresholdPercent + '%');
-        } else if (isBelowMin) {
-          log(logName + ' is at ' + writeCapacityPercent +
-            '% write capacity and below minimum of ' + config.writeCapacity.min + '%');
-        } else if (writeCapacityPercent > 0) {
-          log(logName + ' is at ' + writeCapacityPercent +
-            '% write capacity and within minimum of ' + config.writeCapacity.min +
-            '% and threshold of ' + config.writeCapacity.increment.thresholdPercent + '%');
+        logMessage += ' is consuming ' + data.ConsumedThroughput.WriteCapacityUnits + ' of ' +
+          data.ProvisionedThroughput.WriteCapacityUnits + ' (' + writeCapacityPercent +
+          '%) write capacity units';
+        if (isAtMax) {
+          logMessage += ' and is already at max allowed ' + config.writeCapacity.max + ' units';
         }
+        if (isAboveThreshold && !isAtMax) {
+          logMessage += ' and is above maximum threshold of ' +
+            config.writeCapacity.increment.thresholdPercent + '%';
+        }
+        if (isBelowMin) {
+          logMessage += ' and is below the min allowed ' + config.writeCapacity.min + ' units';
+        }
+        if (isAdjustmentRequired) {
+          logMessage += ' so an increment is REQUIRED';
+        } else {
+          logMessage += ' so an increment is not required';
+        }
+        log(logMessage);
 
         return isAdjustmentRequired;
       },
@@ -173,10 +214,37 @@ const provisioner = new ConfigurableProvisioner({
         let writeCapacityPercent = Throughput.getWriteCapacityUtilisationPercent(data);
         let isBelowThreshold = writeCapacityPercent <
           config.writeCapacity.decrement.thresholdPercent;
-
+        let isAtMin = data.ProvisionedThroughput.WriteCapacityUnits <= config.writeCapacity.min;
         let isAboveMax = data.ProvisionedThroughput.WriteCapacityUnits > config.writeCapacity.max;
-        let isAdjustmentWanted = isBelowThreshold || isAboveMax;
+        let isAdjustmentWanted = (isBelowThreshold || isAboveMax) && !isAtMin;
         let isAdjustmentRequired = isWriteDecrementAllowed && isAdjustmentWanted;
+
+        // Logging
+        let logMessage = typeof data.IndexName === 'undefined' ? data.TableName :
+          data.TableName + '.' + data.IndexName;
+        logMessage += ' is consuming ' + data.ConsumedThroughput.WriteCapacityUnits + ' of ' +
+          data.ProvisionedThroughput.WriteCapacityUnits + ' (' + writeCapacityPercent +
+          '%) write capacity units';
+        if (isAtMin) {
+          logMessage += ' and is already at min allowed ' + config.writeCapacity.min + ' units';
+        }
+        if (isBelowThreshold && !isAtMin) {
+          logMessage += ' and is below minimum threshold of ' +
+            config.writeCapacity.decrement.thresholdPercent + '%';
+        }
+        if (isAboveMax) {
+          logMessage += ' and is above the max allowed ' + config.writeCapacity.max + ' units';
+        }
+        if (isAdjustmentWanted) {
+          logMessage += ' so a decrement is REQUESTED';
+        } else {
+          logMessage += ' so a decrement is not required';
+        }
+        if (isAdjustmentWanted && !isWriteDecrementAllowed) {
+          logMessage += ' but has been DISALLOWED due to rate limiting';
+        }
+        log(logMessage);
+
         return isAdjustmentRequired;
       },
       calculateValue: data => {

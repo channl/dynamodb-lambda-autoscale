@@ -25,11 +25,8 @@ export default class RateLimitedDecrement {
       return false;
     }
 
-    let adjustment = data.ProvisionedThroughput.ReadCapacityUnits -
-      calcNewValueFunc(data);
-
-    if (adjustment < minAdjustment &&
-      this.getNowDate().valueOf() <
+    let adjustment = data.ProvisionedThroughput.ReadCapacityUnits - calcNewValueFunc(data);
+    if (adjustment < minAdjustment && this.getNowDate().valueOf() <
       this.getLastAllowedDecrementDate().valueOf()) {
       // Disallow if the adjustment is very small.
       // However, if we have crossed the last time
@@ -62,9 +59,7 @@ export default class RateLimitedDecrement {
       return false;
     }
 
-    let adjustment = data.ProvisionedThroughput.WriteCapacityUnits -
-      calcNewValueFunc(data);
-
+    let adjustment = data.ProvisionedThroughput.WriteCapacityUnits - calcNewValueFunc(data);
     if (adjustment < minAdjustment && this.getNowDate().valueOf() <
       this.getLastAllowedDecrementDate().valueOf()) {
       // Disallow if the adjustment is very small.
