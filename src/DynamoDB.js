@@ -9,7 +9,7 @@ import type {
   UpdateTableResponse,
   ListTablesRequest,
   ListTablesResponse,
-} from './FlowTypes';
+} from 'aws-sdk-promise';
 
 export default class DynamoDB {
   _db: AWS.DynamoDB;
@@ -39,7 +39,6 @@ export default class DynamoDB {
     let sw = stats.timer('DynamoDB.describeTableAsync').start();
     try {
       invariant(typeof params !== 'undefined', 'Parameter \'params\' is not set');
-
       let res = await this._db.describeTable(params).promise();
       return res.data;
     } catch (ex) {
@@ -58,8 +57,7 @@ export default class DynamoDB {
     let sw = stats.timer('DynamoDB.updateTableAsync').start();
     try {
       invariant(typeof params !== 'undefined', 'Parameter \'params\' is not set');
-
-      let res = this._db.updateTable(params).promise();
+      let res = await this._db.updateTable(params).promise();
       return res.data;
     } catch (ex) {
       warning(JSON.stringify({

@@ -1,9 +1,12 @@
 /* @flow */
 import { json, stats, warning, invariant } from './Global';
 import CloudWatch from './CloudWatch';
+import type { TableConsumedCapacityDescription } from './FlowTypes';
 import type {
-  TableDescription, GetMetricStatisticsResponse, Dimension,
-  TableConsumedCapacityDescription } from './FlowTypes';
+  TableDescription,
+  GetMetricStatisticsResponse,
+  Dimension,
+} from 'aws-sdk-promise';
 
 export default class CapacityCalculator {
   _cw: CloudWatch;

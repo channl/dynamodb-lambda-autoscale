@@ -5,7 +5,7 @@ import type {
   CloudWatchOptions,
   GetMetricStatisticsRequest,
   GetMetricStatisticsResponse,
-} from './FlowTypes';
+} from 'aws-sdk-promise';
 
 export default class CloudWatch {
   _cw: AWS.CloudWatch;
@@ -20,8 +20,7 @@ export default class CloudWatch {
     : Promise<GetMetricStatisticsResponse> {
     let sw = stats.timer('CloudWatch.getMetricStatisticsAsync').start();
     try {
-      invariant(typeof params !== 'undefined',
-        'Parameter \'params\' is not set');
+      invariant(typeof params !== 'undefined', 'Parameter \'params\' is not set');
       let res = await this._cw.getMetricStatistics(params).promise();
       return res.data;
     } catch (ex) {

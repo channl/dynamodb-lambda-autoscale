@@ -4,7 +4,9 @@ import RateLimitedDecrement from './RateLimitedDecrement';
 import Throughput from './Throughput';
 import { log, invariant } from './Global';
 import DynamoDB from './DynamoDB';
-import type { TableDescription, TableConsumedCapacityDescription, Config } from './FlowTypes';
+import type { TableDescription } from 'aws-sdk-promise';
+import type { Config, TableConsumedCapacityDescription } from './FlowTypes';
+
 // NOTES
 // - 'adjustmentPercent' or 'adjustmentUnits' is used, which ever is bigger
 // - 'min' and 'max' are hard limits

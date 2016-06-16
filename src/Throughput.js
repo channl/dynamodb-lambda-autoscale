@@ -1,6 +1,6 @@
 /* @flow */
 import { json, warning, invariant } from './Global';
-import type { TableDescription } from './FlowTypes';
+import type { TableDescription } from 'aws-sdk-promise';
 
 export default class Throughput {
   static getReadCapacityUtilisationPercent(data) {

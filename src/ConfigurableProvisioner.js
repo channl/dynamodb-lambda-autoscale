@@ -2,12 +2,14 @@
 import { json, warning, invariant } from './Global';
 import type {
   TableDescription,
-  TableConsumedCapacityDescription,
   GlobalSecondaryIndex,
   UpdateTableRequest,
-  TableProvisionedAndConsumedThroughput,
   GlobalSecondaryIndexUpdate,
   Throughput,
+} from 'aws-sdk-promise';
+import type {
+  TableProvisionedAndConsumedThroughput,
+  TableConsumedCapacityDescription,
   ConfigurableProvisionerConfig,
 } from './FlowTypes';
 

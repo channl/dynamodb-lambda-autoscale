@@ -13,7 +13,7 @@ export const log = (...params: any[]) => {
 };
 
 export const warning = (predicateOrValue: any, value: ?any) => {
-  if (typeof value === 'undefined') {
+  if (value == null) {
     _warning(false, predicateOrValue);
   } else {
     _warning(predicateOrValue, value);
@@ -21,7 +21,7 @@ export const warning = (predicateOrValue: any, value: ?any) => {
 };
 
 export const invariant = (predicateOrValue: any, value: ?any) => {
-  if (typeof value === 'undefined') {
+  if (value == null) {
     _invariant(false, predicateOrValue);
   } else {
     _invariant(predicateOrValue, value);
