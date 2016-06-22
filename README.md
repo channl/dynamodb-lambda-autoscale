@@ -28,7 +28,7 @@ connection with, the use of this code.
   1. Fork the repo
   2. Clone your fork
   3. Create a new file in the root folder called 'config.env.production'
-  4. Put your AWS credentials into the file in the following format
+  4. Put your AWS credentials into the file in the following format, only if you want to run a local test (not needed for lambda)
   ~~~~
   AWS_ACCESS_KEY_ID="###################"
   AWS_SECRET_ACCESS_KEY="###############"
@@ -75,7 +75,7 @@ connection with, the use of this code.
   6. Set the Role to 'DynamoDBLambdaAutoscale'
   7. Set the Memory to the lowest value initially but test different values at a later date to see how it affects performance
   8. Set the Timeout to approximately 5 seconds (higher or lower depending on the amount of tables you have and the selected memory setting)
-  9. Once the function is created, attach a 'scheduled event' event source and make it run every minute
+  9. Once the function is created, attach a 'scheduled event' event source and make it run every minute.  Event Sources > Add Event Source > Event Type = Cloudwatch Events - Schedule. Set the name to 'DynamoDBLambdaAutoscale' and the schedule expression to 'rate(1 miunte)
 
 ## Configuration
 
