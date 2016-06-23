@@ -16,46 +16,46 @@ import type {
 export default class ProvisionerConfigurableBase extends ProvisionerBase {
 
   // eslint-disable-next-line no-unused-vars
-  isReadCapacityIncrementRequired(data: TableProvisionedAndConsumedThroughput) {
+  isReadCapacityIncrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
     invariant(false, 'The method \'isReadCapacityIncrementRequired\' was not implemented');
   }
 
   // eslint-disable-next-line no-unused-vars
-  calculateIncrementedReadCapacityValue(data: TableProvisionedAndConsumedThroughput) {
+  calculateIncrementedReadCapacityValue(data: TableProvisionedAndConsumedThroughput): number {
     invariant(false, 'The method \'calculateIncrementedReadCapacityValue\' was not implemented');
   }
 
   // eslint-disable-next-line no-unused-vars
-  isReadCapacityDecrementRequired(data: TableProvisionedAndConsumedThroughput) {
+  isReadCapacityDecrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
     invariant(false, 'The method \'isReadCapacityDecrementRequired\' was not implemented');
   }
 
   // eslint-disable-next-line no-unused-vars
-  calculateDecrementedReadCapacityValue(data: TableProvisionedAndConsumedThroughput) {
+  calculateDecrementedReadCapacityValue(data: TableProvisionedAndConsumedThroughput): number {
     invariant(false, 'The method \'calculateDecrementedReadCapacityValue\' was not implemented');
   }
 
   // eslint-disable-next-line no-unused-vars
-  isWriteCapacityIncrementRequired(data: TableProvisionedAndConsumedThroughput) {
+  isWriteCapacityIncrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
     invariant(false, 'The method \'isWriteCapacityIncrementRequired\' was not implemented');
   }
 
   // eslint-disable-next-line no-unused-vars
-  calculateIncrementedWriteCapacityValue(data: TableProvisionedAndConsumedThroughput) {
+  calculateIncrementedWriteCapacityValue(data: TableProvisionedAndConsumedThroughput): number {
     invariant(false, 'The method \'calculateIncrementedWriteCapacityValue\' was not implemented');
   }
 
   // eslint-disable-next-line no-unused-vars
-  isWriteCapacityDecrementRequired(data: TableProvisionedAndConsumedThroughput) {
+  isWriteCapacityDecrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
     invariant(false, 'The method \'isWriteCapacityDecrementRequired\' was not implemented');
   }
 
   // eslint-disable-next-line no-unused-vars
-  calculateDecrementedWriteCapacityValue(data: TableProvisionedAndConsumedThroughput) {
+  calculateDecrementedWriteCapacityValue(data: TableProvisionedAndConsumedThroughput): number {
     invariant(false, 'The method \'calculateDecrementedWriteCapacityValue\' was not implemented');
   }
 
-  async getTableNamesAsync() {
+  async getTableNamesAsync(): Promise<string[]> {
     invariant(false, 'The method \'getTableNamesAsync\' was not implemented');
   }
 

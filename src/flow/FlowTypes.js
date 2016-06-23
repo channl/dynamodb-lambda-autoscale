@@ -19,6 +19,12 @@ export type TableConsumedCapacityDescription = {
   GlobalSecondaryIndexes: GlobalSecondaryIndexConsumedThroughput[],
 };
 
+export type ConsumedCapacityDesc = {
+  tableName: string,
+  globalSecondaryIndexName: ?string,
+  value: number,
+};
+
 export type ProvisionerConfig = {
   ReadCapacity: CapacityConfig,
   WriteCapacity: CapacityConfig,

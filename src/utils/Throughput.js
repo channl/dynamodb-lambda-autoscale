@@ -65,8 +65,8 @@ export default class Throughput {
       adjustmentContext.ProvisionedValue;
 
     // Increment 'to' unit value
-    let toU = (adjustmentContext.CapacityAdjustmentConfig.To != null && adjustmentContext.CapacityAdjustmentConfig.To.units != null) ?
-      adjustmentContext.CapacityAdjustmentConfig.To.units :
+    let toU = (adjustmentContext.CapacityAdjustmentConfig.To != null && adjustmentContext.CapacityAdjustmentConfig.To.Units != null) ?
+      adjustmentContext.CapacityAdjustmentConfig.To.Units :
       adjustmentContext.ProvisionedValue;
 
     // Select the greatest calculated increment

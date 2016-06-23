@@ -1,7 +1,11 @@
 /* @flow */
 import { json, stats, warning, invariant } from '../Global';
 import CloudWatch from '../aws/CloudWatch';
-import type { TableConsumedCapacityDescription, StatisticSettings } from '../flow/FlowTypes';
+import type {
+  TableConsumedCapacityDescription,
+  StatisticSettings,
+  ConsumedCapacityDesc
+} from '../flow/FlowTypes';
 import type {
   TableDescription,
   GetMetricStatisticsResponse,
@@ -16,7 +20,7 @@ export default class CapacityCalculatorBase {
   }
 
   // Get the region
-  getCloudWatchRegion() {
+  getCloudWatchRegion(): string {
     invariant(false, 'The method \'getCloudWatchRegion\' was not implemented');
   }
 
@@ -27,7 +31,7 @@ export default class CapacityCalculatorBase {
 
   // Gets the projected capacity value based on the cloudwatch datapoints
   // eslint-disable-next-line no-unused-vars
-  getProjectedValue(data: GetMetricStatisticsResponse) {
+  getProjectedValue(data: GetMetricStatisticsResponse): number {
     invariant(false, 'The method \'getProjectedValue\' was not implemented');
   }
 
@@ -60,7 +64,7 @@ export default class CapacityCalculatorBase {
       let gsis = gsiConsumedReads.map((read, i) => {
         let write = gsiConsumedWrites[i];
         return {
-          // $FlowIgnor: The indexName is not null in this case
+          // $FlowIgnore: The indexName is not null in this case
           IndexName: read.globalSecondaryIndexName,
           ConsumedThroughput: {
             ReadCapacityUnits: read.value,
@@ -90,12 +94,11 @@ export default class CapacityCalculatorBase {
   }
 
   async getConsumedCapacityAsync(
-    isRead: boolean, tableName: string, globalSecondaryIndexName: ?string) {
+    isRead: boolean, tableName: string, globalSecondaryIndexName: ?string):
+    Promise<ConsumedCapacityDesc> {
     try {
       invariant(isRead != null, 'Parameter \'isRead\' is not set');
       invariant(tableName != null, 'Parameter \'tableName\' is not set');
-      invariant(globalSecondaryIndexName != null,
-        'Parameter \'globalSecondaryIndexName\' is not set');
 
       // These values determine how many minutes worth of metrics
       let statisticCount = 5;
@@ -120,11 +123,13 @@ export default class CapacityCalculatorBase {
 
       let statistics = await this.cw.getMetricStatisticsAsync(params);
       let value = this.getProjectedValue(statistics);
-      return {
+      let result: ConsumedCapacityDesc = {
         tableName,
         globalSecondaryIndexName,
         value
       };
+
+      return result;
     } catch (ex) {
       warning(JSON.stringify({
         class: 'CapacityCalculator',

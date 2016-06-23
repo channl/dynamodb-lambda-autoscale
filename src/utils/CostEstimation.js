@@ -1,9 +1,12 @@
 /* @flow */
 import { json, warning, invariant } from '../Global';
+import type {
+  Throughput,
+} from 'aws-sdk-promise';
 
 export default class CostEstimation {
 
-  static getMonthlyEstimatedTableCost(provisionedThroughput) {
+  static getMonthlyEstimatedTableCost(provisionedThroughput: Throughput) {
     try {
       invariant(provisionedThroughput != null, 'Parameter \'provisionedThroughput\' is not set');
 

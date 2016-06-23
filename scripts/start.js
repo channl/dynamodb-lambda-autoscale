@@ -12,13 +12,11 @@ try {
           console.log(JSON.stringify(data));
         }
       } catch (e) {
-        console.log(e.stack);
-        console.error(e);
+        console.error(e.stack);
       }
     },
     fail: e => {
-      console.log(e.stack);
-      console.error(e);
+      console.error(e.stack);
     }
   };
 

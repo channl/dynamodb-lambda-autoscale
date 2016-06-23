@@ -13,17 +13,17 @@ export default class ProvisionerBase {
     this.db = DynamoDB.create(this.getDynamoDBRegion());
   }
 
-  getDynamoDBRegion() {
+  getDynamoDBRegion(): string {
     invariant(false, 'The method \'getDynamoDBRegion\' was not implemented');
   }
 
-  async getTableNamesAsync() {
+  async getTableNamesAsync(): Promise<string[]> {
     invariant(false, 'The method \'getTableNamesAsync\' was not implemented');
   }
 
   async getTableUpdateAsync(
     tableDescription: TableDescription,
-    tableConsumedCapacityDescription: TableConsumedCapacityDescription) :
+    tableConsumedCapacityDescription: TableConsumedCapacityDescription):
     Promise<?UpdateTableRequest> {
     invariant(false, 'The method \'getTableUpdateAsync\' was not implemented');
   }

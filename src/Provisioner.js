@@ -11,12 +11,12 @@ import type { TableProvisionedAndConsumedThroughput, ProvisionerConfig, Adjustme
 export default class Provisioner extends ProvisionerConfigurableBase {
 
   // Get the region
-  getDynamoDBRegion() {
+  getDynamoDBRegion(): string {
     return 'us-east-1';
   }
 
   // Get the list of tables which we want to autoscale
-  async getTableNamesAsync() {
+  async getTableNamesAsync(): Promise<string[]> {
 
     // Option 1 - All tables (Default)
     let listTablesResponse = await this.db.listTablesAsync();

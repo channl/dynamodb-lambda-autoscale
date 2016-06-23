@@ -10,7 +10,7 @@ import Stats from './utils/Stats';
 import CostEstimation from './utils/CostEstimation';
 import Throughput from './utils/Throughput';
 import CapacityCalculator from './CapacityCalculator';
-import { json, stats, log, invariant } from './Global';
+import { json, stats, log } from './Global';
 
 log('*** LAMBDA INIT ***');
 export let handler = async (event: any, context: any) => {
@@ -130,7 +130,6 @@ export let handler = async (event: any, context: any) => {
     }
 
   } catch (e) {
-    invariant(e);
     if (context) {
       context.fail(e);
     } else {
