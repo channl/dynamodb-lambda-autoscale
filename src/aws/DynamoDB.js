@@ -1,6 +1,6 @@
 /* @flow */
 import AWS from 'aws-sdk-promise';
-import { json, stats, warning, invariant } from './Global';
+import { json, stats, warning, invariant } from '../Global';
 import type {
   DynamoDBOptions,
   DescribeTableRequest,
@@ -15,8 +15,19 @@ export default class DynamoDB {
   _db: AWS.DynamoDB;
 
   constructor(dynamoOptions: DynamoDBOptions) {
-    invariant(typeof dynamoOptions !== 'undefined', 'Parameter \'dynamoOptions\' is not set');
+    invariant(dynamoOptions != null, 'Parameter \'dynamoOptions\' is not set');
     this._db = new AWS.DynamoDB(dynamoOptions);
+  }
+
+  static create(region: string): DynamoDB {
+    var options = {
+      region,
+      apiVersion: '2012-08-10',
+      dynamoDbCrc32: false,
+      httpOptions: { timeout: 5000 }
+    };
+
+    return new DynamoDB(options);
   }
 
   async listTablesAsync(params: ?ListTablesRequest): Promise<ListTablesResponse> {
@@ -38,7 +49,7 @@ export default class DynamoDB {
   async describeTableAsync(params: DescribeTableRequest): Promise<DescribeTableResponse> {
     let sw = stats.timer('DynamoDB.describeTableAsync').start();
     try {
-      invariant(typeof params !== 'undefined', 'Parameter \'params\' is not set');
+      invariant(params != null, 'Parameter \'params\' is not set');
       let res = await this._db.describeTable(params).promise();
       return res.data;
     } catch (ex) {
@@ -56,7 +67,7 @@ export default class DynamoDB {
   async updateTableAsync(params: UpdateTableRequest): Promise<UpdateTableResponse> {
     let sw = stats.timer('DynamoDB.updateTableAsync').start();
     try {
-      invariant(typeof params !== 'undefined', 'Parameter \'params\' is not set');
+      invariant(params != null, 'Parameter \'params\' is not set');
       let res = await this._db.updateTable(params).promise();
       return res.data;
     } catch (ex) {

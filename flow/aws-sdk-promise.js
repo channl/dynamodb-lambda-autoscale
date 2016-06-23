@@ -334,8 +334,8 @@ declare module 'aws-sdk-promise' {
   };
 
   declare type ProvisionedThroughput = {
-     LastDecreaseDateTime: number,
-     LastIncreaseDateTime: number,
+     LastDecreaseDateTime: string,
+     LastIncreaseDateTime: string,
      NumberOfDecreasesToday: number,
      ReadCapacityUnits: number,
      WriteCapacityUnits: number,

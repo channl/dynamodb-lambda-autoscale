@@ -1,12 +1,11 @@
 /* @flow */
-import { json, warning, invariant } from '../src/Global';
+import { json, warning, invariant } from '../Global';
 
 export default class CostEstimation {
 
   static getMonthlyEstimatedTableCost(provisionedThroughput) {
     try {
-      invariant(typeof provisionedThroughput !== 'undefined',
-        'Parameter \'provisionedThroughput\' is not set');
+      invariant(provisionedThroughput != null, 'Parameter \'provisionedThroughput\' is not set');
 
       const averageHoursPerMonth = 720;
       const readCostPerHour = 0.0065;

@@ -3,16 +3,14 @@
 // $FlowIgnore
 import babelPolyfill from 'babel-polyfill';
 /* eslint-enable */
-import config from './Config';
+import Provisioner from './Provisioner';
 // $FlowIgnore
 import dotenv from 'dotenv';
-import DynamoDB from './DynamoDB';
-import CloudWatch from './CloudWatch';
-import Stats from './Stats';
-import CostEstimation from './CostEstimation';
-import Throughput from './Throughput';
+import Stats from './utils/Stats';
+import CostEstimation from './utils/CostEstimation';
+import Throughput from './utils/Throughput';
 import CapacityCalculator from './CapacityCalculator';
-import { json, stats, log, invariant } from '../src/Global';
+import { json, stats, log, invariant } from './Global';
 
 log('*** LAMBDA INIT ***');
 export let handler = async (event: any, context: any) => {
@@ -28,30 +26,29 @@ export let handler = async (event: any, context: any) => {
     // Load environment variables
     dotenv.config({path: 'config.env'});
 
-    let db = new DynamoDB(config.connection.dynamoDB);
-    let cw = new CloudWatch(config.connection.cloudWatch);
-    let cc = new CapacityCalculator(cw);
+    let provisioner = new Provisioner();
+    let capacityCalculator = new CapacityCalculator();
 
     log('Getting table names');
-    let tableNames = await config.getTableNamesAsync(db);
+    let tableNames = await provisioner.getTableNamesAsync();
     let capacityTasks = tableNames
       .map(async tableName => {
 
         log('Getting table description', tableName);
-        let describeTableResponse = await db.describeTableAsync({TableName: tableName});
+        let describeTableResponse = await provisioner.db.describeTableAsync({TableName: tableName});
         let tableDescription = describeTableResponse.Table;
 
         log('Getting table consumed capacity description', tableName);
-        let consumedCapacityTableDescription = await cc
+        let consumedCapacityTableDescription = await capacityCalculator
           .describeTableConsumedCapacityAsync(tableDescription, 1);
 
         log('Getting table update request', tableName);
-        let tableUpdateRequest = config.getTableUpdate(tableDescription,
+        let tableUpdateRequest = await provisioner.getTableUpdateAsync(tableDescription,
           consumedCapacityTableDescription);
 
         if (tableUpdateRequest) {
           log('Updating table', tableName);
-          await db.updateTableAsync(tableUpdateRequest);
+          await provisioner.db.updateTableAsync(tableUpdateRequest);
           log('Updated table', tableName);
         }
 
