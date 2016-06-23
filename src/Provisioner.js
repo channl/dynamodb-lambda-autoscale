@@ -180,7 +180,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     let isBelowMin = this.isBelowMin(adjustmentContext);
     let isAboveThreshold = this.isAboveThreshold(adjustmentContext);
     let isBelowThreshold = this.isBelowThreshold(adjustmentContext);
-    let isAdjustmentWanted = (isAboveMax || isAboveMax || isAboveThreshold || isBelowThreshold);
+    let isAdjustmentWanted = (isAboveMax || isBelowMin || isAboveThreshold || isBelowThreshold);
 
     // Determine if an adjustment is allowed under the rate limiting rules
     let isAfterLastDecreaseGracePeriod = this.isAfterLastAdjustmentGracePeriod(
@@ -221,6 +221,12 @@ export default class Provisioner extends ProvisionerConfigurableBase {
       return false;
     }
 
+    if (context.CapacityConfig.Max != null &&
+      context.ProvisionedValue >= context.CapacityConfig.Max) {
+      // Already at maximum allowed ProvisionedValue
+      return false;
+    }
+
     let utilisationPercent = (context.ConsumedValue / context.ProvisionedValue) * 100;
     return utilisationPercent > context.CapacityAdjustmentConfig.When.UtilisationIsAbovePercent;
   }
@@ -229,6 +235,12 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     invariant(context != null, 'Parameter \'context\' is not set');
 
     if (context.CapacityAdjustmentConfig.When.UtilisationIsBelowPercent == null) {
+      return false;
+    }
+
+    let min = context.CapacityConfig.Min != null ? context.CapacityConfig.Min : 1;
+    if (context.ProvisionedValue <= min) {
+      // Already at minimum allowed ProvisionedValue
       return false;
     }
 
@@ -243,7 +255,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
       return false;
     }
 
-    return context.ConsumedValue > context.CapacityConfig.Max;
+    return context.ProvisionedValue > context.CapacityConfig.Max;
   }
 
   isBelowMin(context: AdjustmentContext): boolean {
@@ -253,7 +265,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
       return false;
     }
 
-    return context.ConsumedValue < context.CapacityConfig.Min;
+    return context.ProvisionedValue < context.CapacityConfig.Min;
   }
 
   isAfterLastAdjustmentGracePeriod(lastAdjustmentDateTime: string, afterLastAdjustmentMinutes?: number): boolean {

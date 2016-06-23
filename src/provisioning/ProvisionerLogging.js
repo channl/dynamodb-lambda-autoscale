@@ -39,16 +39,15 @@ export default class ConfigLogging {
 
     if (adjustmentData.isAdjustmentWanted) {
       logMessage += ' so an increment is WANTED';
-    }
-
-    if (adjustmentData.isAdjustmentAllowed) {
-      logMessage += ' and is ALLOWED';
-    } else if (!adjustmentData.isAfterLastDecreaseGracePeriod) {
-      logMessage += ' but is DISALLOWED due to \'AfterLastDecrementMinutes\' grace period';
-    } else if (!adjustmentData.isAfterLastIncreaseGracePeriod) {
-      logMessage += ' but is DISALLOWED due to \'AfterLastIncreaseMinutes\' grace period';
-    } else {
-      logMessage += ' but is DISALLOWED';
+      if (adjustmentData.isAdjustmentAllowed) {
+        logMessage += ' and is ALLOWED';
+      } else if (!adjustmentData.isAfterLastDecreaseGracePeriod) {
+        logMessage += ' but is DISALLOWED due to \'AfterLastDecrementMinutes\' grace period';
+      } else if (!adjustmentData.isAfterLastIncreaseGracePeriod) {
+        logMessage += ' but is DISALLOWED due to \'AfterLastIncreaseMinutes\' grace period';
+      } else {
+        logMessage += ' but is DISALLOWED';
+      }
     }
 
     log(logMessage);
