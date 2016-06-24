@@ -33,8 +33,8 @@ export type ProvisionerConfig = {
 export type CapacityConfig = {
   Min?: number,
   Max?: number,
-  Increment: CapacityAdjustmentConfig,
-  Decrement: CapacityAdjustmentConfig,
+  Increment?: CapacityAdjustmentConfig,
+  Decrement?: CapacityAdjustmentConfig,
 };
 
 export type CapacityAdjustmentConfig = {

@@ -1,8 +1,10 @@
 /* @flow */
-export default class Stats {
-  _stats: any;
+import measured from 'measured';
 
-  constructor(stats: any) {
+export default class Stats {
+  _stats: measured.MeasuredCollection;
+
+  constructor(stats: measured.MeasuredCollection) {
     this._stats = stats;
   }
 
@@ -19,7 +21,7 @@ export default class Stats {
     this._stats._metrics = {};
   }
 
-  toJSON() {
+  toJSON(): any {
     return this._stats.toJSON();
   }
 

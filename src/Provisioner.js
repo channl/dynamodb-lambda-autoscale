@@ -47,6 +47,10 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
+    if (config.ReadCapacity.Increment == null) {
+      return false;
+    }
+
     let adjustmentContext = this.getReadCapacityIncrementAdjustmentContext(data, config);
     return this.isCapacityAdjustmentRequired(data, adjustmentContext);
   }
@@ -63,8 +67,12 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
+    if (config.ReadCapacity.Decrement == null) {
+      return false;
+    }
+
     let adjustmentContext = this.getReadCapacityDecrementAdjustmentContext(data, config);
-    return this.isCapacityAdjustmentRequired(data, adjustmentContext, this.calculateDecrementedReadCapacityValue);
+    return this.isCapacityAdjustmentRequired(data, adjustmentContext, d => this.calculateDecrementedReadCapacityValue(d));
   }
 
   calculateDecrementedReadCapacityValue(data: TableProvisionedAndConsumedThroughput) {
@@ -79,6 +87,10 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
+    if (config.WriteCapacity.Increment == null) {
+      return false;
+    }
+
     let adjustmentContext = this.getWriteCapacityIncrementAdjustmentContext(data, config);
     return this.isCapacityAdjustmentRequired(data, adjustmentContext);
   }
@@ -95,6 +107,10 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
+    if (config.WriteCapacity.Decrement == null) {
+      return false;
+    }
+
     let adjustmentContext = this.getWriteCapacityDecrementAdjustmentContext(data, config);
     return this.isCapacityAdjustmentRequired(data, adjustmentContext, this.calculateDecrementedWriteCapacityValue);
   }
@@ -110,6 +126,8 @@ export default class Provisioner extends ProvisionerConfigurableBase {
   getReadCapacityIncrementAdjustmentContext(
     data: TableProvisionedAndConsumedThroughput,
     config: ProvisionerConfig): AdjustmentContext {
+
+    invariant(config.ReadCapacity.Increment != null, 'Increment cannot be null');
     return {
       TableName: data.TableName,
       IndexName: data.IndexName,
@@ -126,6 +144,8 @@ export default class Provisioner extends ProvisionerConfigurableBase {
   getReadCapacityDecrementAdjustmentContext(
     data: TableProvisionedAndConsumedThroughput,
     config: ProvisionerConfig): AdjustmentContext {
+
+    invariant(config.ReadCapacity.Decrement != null, 'Decrement cannot be null');
     return {
       TableName: data.TableName,
       IndexName: data.IndexName,
@@ -142,6 +162,8 @@ export default class Provisioner extends ProvisionerConfigurableBase {
   getWriteCapacityIncrementAdjustmentContext(
     data: TableProvisionedAndConsumedThroughput,
     config: ProvisionerConfig): AdjustmentContext {
+
+    invariant(config.WriteCapacity.Increment != null, 'Increment cannot be null');
     return {
       TableName: data.TableName,
       IndexName: data.IndexName,
@@ -158,6 +180,8 @@ export default class Provisioner extends ProvisionerConfigurableBase {
   getWriteCapacityDecrementAdjustmentContext(
     data: TableProvisionedAndConsumedThroughput,
     config: ProvisionerConfig): AdjustmentContext {
+
+    invariant(config.WriteCapacity.Decrement != null, 'Decrement cannot be null');
     return {
       TableName: data.TableName,
       IndexName: data.IndexName,
@@ -191,7 +215,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
       adjustmentContext.CapacityAdjustmentConfig.When.AfterLastIncrementMinutes);
 
     let isReadDecrementAllowed = adjustmentContext.AdjustmentType === 'decrement' ?
-      RateLimitedDecrement.isDecrementAllowed(data, adjustmentContext, this.calculateDecrementedReadCapacityValue) :
+      RateLimitedDecrement.isDecrementAllowed(data, adjustmentContext, d => this.calculateDecrementedReadCapacityValue(d)) :
       true;
 
     let isAdjustmentAllowed = isAfterLastDecreaseGracePeriod && isAfterLastIncreaseGracePeriod && isReadDecrementAllowed;
