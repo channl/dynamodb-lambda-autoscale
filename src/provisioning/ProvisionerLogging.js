@@ -38,7 +38,8 @@ export default class ConfigLogging {
     }
 
     if (adjustmentData.isAdjustmentWanted) {
-      logMessage += ' so an increment is WANTED';
+      logMessage += adjustmentContext.AdjustmentType === 'increment' ?
+        ' so an increment is WANTED' : ' so a decrement is WANTED';
       if (adjustmentData.isAdjustmentAllowed) {
         logMessage += ' and is ALLOWED';
       } else if (!adjustmentData.isAfterLastDecreaseGracePeriod) {
