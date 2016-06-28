@@ -30,7 +30,7 @@ export default class CapacityCalculator extends CapacityCalculatorBase {
     // Default algorithm for projecting a good value for the current ConsumedThroughput is:
     // 1. Query 5 average readings each spanning a minute
     // 2. Select the Max value from those 5 readings
-    let averages = data.Datapoints.map(dp => dp.Average);
+    let averages = data.Datapoints.map(dp => dp.Sum / data.period);
     return Math.max(...averages);
   }
 }

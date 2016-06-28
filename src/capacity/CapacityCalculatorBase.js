@@ -103,25 +103,27 @@ export default class CapacityCalculatorBase {
       // These values determine how many minutes worth of metrics
       let statisticCount = 5;
       let statisticSpanMinutes = 1;
-      let statisticType = 'Average';
+      let statisticType = 'Sum';
 
       let EndTime = new Date();
       let StartTime = new Date();
       StartTime.setTime(EndTime - (60000 * statisticSpanMinutes * statisticCount));
       let MetricName = isRead ? 'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
       let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
+      let period = (statisticSpanMinutes * 60);
       let params = {
         Namespace: 'AWS/DynamoDB',
         MetricName,
         Dimensions,
         StartTime,
         EndTime,
-        Period: (statisticSpanMinutes * 60),
+        Period: period,
         Statistics: [ statisticType ],
         Unit: 'Count'
       };
 
       let statistics = await this.cw.getMetricStatisticsAsync(params);
+      statistics.period = period;
       let value = this.getProjectedValue(statistics);
       let result: ConsumedCapacityDesc = {
         tableName,
