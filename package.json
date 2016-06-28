@@ -1,6 +1,6 @@
 {
   "name": "dynamodb-lambda-autoscale",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "description": "Autoscale DynamoDB provisioned capacity using AWS Lambda",
   "contributors": [
     "Thomas Mitchell <channlappio@gmail.com>"

@@ -11,6 +11,7 @@
 + AWS credential configuration via 'dotenv'
 + Optimised lambda package via 'webpack'
 + ES7 code
++ 100% [Flow](https://flowtype.org/) static type checking coverage
 
 ## Disclaimer
 
@@ -24,19 +25,24 @@ connection with, the use of this code.
 
 ## Getting started
 
+Note: dynamodb-lambda-autoscale uses [Flow](https://flowtype.org/) extensively for static type
+checking, we highly recommend you use [Nuclide](https://nuclide.io/) when making modification to code /
+configuration.  Please see the respective websites for advantages / reasons.
+
 1. Build and package the code
   1. Fork the repo
   2. Clone your fork
   3. Create a new file in the root folder called 'config.env.production'
   4. Put your AWS credentials into the file in the following format, only if you want to run a local test (not needed for lambda)
-  ~~~~
-  AWS_ACCESS_KEY_ID="###################"
-  AWS_SECRET_ACCESS_KEY="###############"
-  ~~~~
-  3. Run 'npm install'
-  4. Run 'npm run build'
-  5. Verify this has created a 'dist.zip' file
-  6. Optionally, run a local test by running 'npm run start'
+    ~~~~
+    AWS_ACCESS_KEY_ID="###################"
+    AWS_SECRET_ACCESS_KEY="###############"
+    ~~~~
+  5. Update [Region.json](./src/configuration/Region.json) to match the region of your DynamoDB instance
+  5. Run 'npm install'
+  6. Run 'npm run build'
+  7. Verify this has created a 'dist.zip' file
+  8. Optionally, run a local test by running 'npm run start'
 
 ## Running on AWS Lambda
 
@@ -44,26 +50,26 @@ connection with, the use of this code.
 2. Create an AWS Policy and Role
   1. Create a policy called 'DynamoDBLambdaAutoscale'
   2. Use the following content to give access to dynamoDB, cloudwatch and lambda logging
-  ~~~~
-  {
-    "Version": "2012-10-17",
-    "Statement": [
-      {
-        "Action": [
-          "dynamodb:ListTables",
-          "dynamodb:DescribeTable",
-          "dynamodb:UpdateTable",
-          "cloudwatch:GetMetricStatistics",
-          "logs:CreateLogGroup",
-          "logs:CreateLogStream",
-          "logs:PutLogEvents"
-        ],
-        "Effect": "Allow",
-        "Resource": "*"
-      }
-    ]
-  }
-  ~~~~
+    ~~~~
+    {
+      "Version": "2012-10-17",
+      "Statement": [
+        {
+          "Action": [
+            "dynamodb:ListTables",
+            "dynamodb:DescribeTable",
+            "dynamodb:UpdateTable",
+            "cloudwatch:GetMetricStatistics",
+            "logs:CreateLogGroup",
+            "logs:CreateLogStream",
+            "logs:PutLogEvents"
+          ],
+          "Effect": "Allow",
+          "Resource": "*"
+        }
+      ]
+    }
+    ~~~~
   3. Create a role called 'DynamoDBLambdaAutoscale'
   4. Attach the newly created policy to the role
 3. Create a AWS Lambda function
@@ -75,70 +81,168 @@ connection with, the use of this code.
   6. Set the Role to 'DynamoDBLambdaAutoscale'
   7. Set the Memory to the lowest value initially but test different values at a later date to see how it affects performance
   8. Set the Timeout to approximately 5 seconds (higher or lower depending on the amount of tables you have and the selected memory setting)
-  9. Once the function is created, attach a 'scheduled event' event source and make it run every minute.  Event Sources > Add Event Source > Event Type = Cloudwatch Events - Schedule. Set the name to 'DynamoDBLambdaAutoscale' and the schedule expression to 'rate(1 miunte)
+  9. Once the function is created, attach a 'scheduled event' event source and make it run every minute.  Event Sources > Add Event Source > Event Type = Cloudwatch Events - Schedule. Set the name to 'DynamoDBLambdaAutoscale' and the schedule expression to 'rate(1 minute)'
 
 ## Configuration
 
-The default setup of the configuration is to apply autoscaling to all tables,
-allowing for a no touch quick setup.
+The default setup in the [Provisioner.js](./src/Provisioner.js) allows for a quick no touch setup.
+A breakdown of the configuration behaviour is as follows:
+- AWS region is set to 'us-east-1' via [Region.json](./src/configuration/Region.json) configuration
+- Autoscales all tables and indexes
+- Autoscaling 'Strategy' settings are defined in [DefaultProvisioner.json](./src/configuration/DefaultProvisioner.json) and are as follows
+  - Separate 'Read' and 'Write' capacity adjustment strategies
+  - Separate asymmetric 'Increment' and 'Decrement' capacity adjustment strategies
+  - Read/Write provisioned capacity increased
+    - when capacity utilisation > 90%
+    - by 3 units or to 110% of the current consumed capacity, which ever is the greater
+    - with hard min/max limits of 1 and 10 respectively
+  - Read/Write provisioned capacity decreased
+    - when capacity utilisation < 30% AND
+    - when at least 60 minutes have passed since the last increment AND
+    - when at least 60 minutes have passed since the last decrement AND
+    - when the adjustment will be at least 5 units AND
+    - when we are allowed to utilise 1 of our 4 AWS enforced decrements
+    - to the consumed throughput value
+    - with hard min/max limits of 1 and 10 respectively
 
-dynamodb-lambda-autoscale takes a different approach to autoscaling
-configuration compared to other community projects.  Rather than making well
-defined changes to a config file this provides a callback function called
-'getTableUpdate' which must be implemented.
+## Strategy Settings
 
+The strategy settings described above uses a simple schema which applies to both Read/Write and to
+both the Increment/Decrement.  Using the options below many different strategies can be constructed:
+- ReadCapacity.Min : (Optional) Define a minimum allowed capacity, otherwise 1
+- ReadCapacity.Max : (Optional) Define a maximum allowed capacity, otherwise unlimited
+- ReadCapacity.Increment : (Optional) Defined an increment strategy
+- ReadCapacity.Increment.When : (Required) Define when capacity should be incremented
+- ReadCapacity.Increment.When.UtilisationIsAbovePercent : (Optional) Define a percentage utilisation upper threshold at which capacity is subject to recalculation
+- ReadCapacity.Increment.When.UtilisationIsBelowPercent : (Optional) Define a percentage utilisation lower threshold at which capacity is subject to recalculation, possible but non sensical for increments however.
+- ReadCapacity.Increment.When.AfterLastIncrementMinutes : (Optional) Define a grace period based off the previous increment in which capacity adjustments should not occur
+- ReadCapacity.Increment.When.AfterLastDecrementMinutes : (Optional) Define a grace period based off the previous decrement in which capacity adjustments should not occur
+- ReadCapacity.Increment.When.UnitAdjustmentGreaterThan : (Optional) Define a minimum unit adjustment so that only capacity adjustments of a certain size are allowed
+- ReadCapacity.Increment.By : (Optional) Define a 'relative' value to change the capacity by
+- ReadCapacity.Increment.By.ConsumedPercent : (Optional) Define a 'relative' percentage adjustment based on the current ConsumedCapacity
+- ReadCapacity.Increment.By.ProvisionedPercent : (Optional) Define a 'relative' percentage adjustment based on the current ProvisionedCapacity
+- ReadCapacity.Increment.By.Units : (Optional) Define a 'relative' unit adjustment
+- ReadCapacity.Increment.To : (Optional) Define an 'absolute' value to change the capacity to
+- ReadCapacity.Increment.To.ConsumedPercent : (Optional) Define an 'absolute' percentage adjustment based on the current ConsumedCapacity
+- ReadCapacity.Increment.To.ProvisionedPercent : (Optional) Define an 'absolute' percentage adjustment based on the current ProvisionedCapacity
+- ReadCapacity.Increment.To.Units : (Optional) Define an 'absolute' unit adjustment
+
+A sample of the strategy setting json is...
 ```javascript
 {
-  connection: {
-    dynamoDB: { apiVersion: '2012-08-10', region: 'us-east-1' },
-    cloudWatch: { apiVersion: '2010-08-01', region: 'us-east-1' }
+  "ReadCapacity": {
+    "Min": 1,
+    "Max": 10,
+    "Increment": {
+      "When": {
+        "UtilisationIsAbovePercent": 90
+      },
+      "By": {
+        "Units": 3
+      },
+      "To": {
+        "ConsumedPercent": 110
+      }
+    },
+    "Decrement": {
+      "When": {
+        "UtilisationIsBelowPercent": 30,
+        "AfterLastIncrementMinutes": 60,
+        "AfterLastDecrementMinutes": 60,
+        "UnitAdjustmentGreaterThan": 5
+      },
+      "To": {
+        "ConsumedPercent": 100
+      }
+    }
   },
-  getTableUpdate: (description, consumedCapacityDescription) => {
-    // Logic goes here....
+  "WriteCapacity": {
+    "Min": 1,
+    "Max": 10,
+    "Increment": {
+      "When": {
+        "UtilisationIsAbovePercent": 90
+      },
+      "By": {
+        "Units": 3
+      },
+      "To": {
+        "ConsumedPercent": 110
+      }
+    },
+    "Decrement": {
+      "When": {
+        "UtilisationIsBelowPercent": 30,
+        "AfterLastIncrementMinutes": 60,
+        "AfterLastDecrementMinutes": 60,
+        "UnitAdjustmentGreaterThan": 5
+      },
+      "To": {
+        "ConsumedPercent": 100
+      }
+    }
   }
-};
+}
 ```
 
+## Advanced Configuration
+
+This project takes a 'React' style code first approach over declarative configuration traditionally
+used by other autoscaling community projects.  Rather than being limited to a structured
+configuration file or even the 'strategy' settings above you have the option to extend the [ProvisionerBase.js](./src/provisioning/ProvisionerBase.js)
+abstract base class for yourself and programmatically implement any desired logic.
+
+The following three functions are all that is required to complete the provisioning functionality.  
+As per the 'React' style, only actual updates to the ProvisionedCapacity will be sent to AWS.
+
+```javascript
+getDynamoDBRegion(): string {
+  // Return the AWS region as a string
+}
+
+async getTableNamesAsync(): Promise<string[]> {
+  // Return the table names to apply autoscaling to as a string array promise
+}
+
+async getTableUpdateAsync(
+  tableDescription: TableDescription,
+  tableConsumedCapacityDescription: TableConsumedCapacityDescription):
+  Promise<?UpdateTableRequest> {
+  // Given an AWS DynamoDB TableDescription and AWS CloudWatch ConsumedCapacity metrics
+  // return an AWS DynamoDB UpdateTable request
+}
+```
 [DescribeTable.ResponseSyntax](http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_DescribeTable.html#API_DescribeTable_ResponseSyntax)
-[UpdateTable.ResponseSyntax](http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateTable.html#API_UpdateTable_ResponseSyntax)
+[UpdateTable.RequestSyntax](http://docs.aws.amazon.com/amazondynamodb/latest/APIReference/API_UpdateTable.html#API_UpdateTable_RequestSyntax)
 
-The function is given the information such as the table name, current table
-provisioned throughput and the consumed throughput for the past minute.
-Table updates will only be sent to AWS if the values are different for the
-current, this approach follows the popular code first pattern used in React.
+Flexibility is great, but implementing all the logic required for a robust autoscaling
+strategy isn't something everyone wants to do.  Hence, the default 'Provisioner' builds upon the base
+class in a layered approach.  The layers are as follows:
+- [Provisioner.js](./src/Provisioner.js) concrete implementation which provides very robust autoscaling logic which can be manipulated with a 'strategy' settings json object
+- [ProvisionerConfigurableBase.js](./src/provisioning/ProvisionerConfigurableBase.js) abstract base class which breaks out the 'getTableUpdateAsync' function into more manageable abstract methods
+- [ProvisionerBase.js](./src/provisioning/ProvisionerBase.js) the root abstract base class which defines the minimum contract
 
-In most cases the default [Config.js](./src/Config.js) which uses the supplied
-[ConfigurableProvisioner.js](./src/ConfigurableProvisioner.js) will provide
-enough functionality out of box such that additional coding is not required.
-The default provisioner provides the following features.
+## Rate Limited Decrement
 
-- Separate 'Read' and 'Write' capacity adjustment
-- Separate 'Increment' and 'Decrement' capacity adjustment
-- Read/Write provisioned capacity increased
-  - if capacity utilisation > 90%
-  - by either 100% or 3 units, which ever is the greater
-  - with hard min/max limits of 1 and 10 respectively
-- Read/Write provisioned capacity decreased
-  - if capacity utilisation < 30% AND
-  - if at least 60 minutes have passed since the last increment AND
-  - if at least 60 minutes have passed since the last decrement AND
-  - if the adjustment will be at least 3 units AND
-  - if we are allowed to utilise 1 of our 4 AWS enforced decrements
-  - to the consumed throughput value
-  - with a hard min limit of 1
+AWS only allows 4 table decrements in a calendar day.  To account for this we have an included
+an algorithm which segments the remaining time to midnight by the amount of decrements we have left.
+This logic allows us to utilise each 4 decrements as efficiently as possible.  The increments on the
+other hand are unlimited, so the algorithm follows a unique 'sawtooth' profile, dropping the
+provisioned capacity all the way down to the consumed throughput rather than gradually.  Please see
+[RateLimitedDecrement.js](./src/utils/RateLimitedDecrement.js) for full implementation.
 
-As AWS only allows 4 table decrements in a calendar day we have an intelligent
-algorithm which segments the remaining time to midnight by the amount of
-decrements we have left.  This logic allows us to utilise each 4 decrements
-efficiently.  The increments are unlimited so the algorithm follows a unique
-'sawtooth' profile, dropping the provisioned throughput all the way down to
-the consumed throughput rather than gradually.  Please see
-[RateLimitedDecrement.js](./src/RateLimitedDecrement.js) for full
-implementation.
+## Capacity Calculation
+
+As well as implementing the correct Provisioning logic it is also important to calculate the
+ConsumedCapacity for the current point in time.  We have provided a default algorithm in
+[CapacityCalculator.js](./src/CapacityCalculator.js) which should be good enough for most purposes
+but it could be swapped out with perhaps an improved version.  The newer version could potentially
+take a series of data points and plot a linear regression line through them for example.
 
 ## Dependencies
 
-This project has the following main dependencies:
+This project has the following main dependencies (n.b. all third party dependencies are compiled
+into a single javascript file before being zipped and uploaded to lambda):
 + aws-sdk - Access to AWS services
 + dotenv - Environment variable configuration useful for lambda
 + measured - Statistics gathering

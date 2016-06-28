@@ -4,7 +4,8 @@ import ProvisionerConfigurableBase from './provisioning/ProvisionerConfigurableB
 import RateLimitedDecrement from './utils/RateLimitedDecrement';
 import Throughput from './utils/Throughput';
 import ProvisionerLogging from './provisioning/ProvisionerLogging';
-import Default from './configuration/Default';
+import { Region } from './configuration/Region';
+import DefaultProvisioner from './configuration/DefaultProvisioner';
 import { invariant } from './Global';
 import type { TableProvisionedAndConsumedThroughput, ProvisionerConfig, AdjustmentContext } from './flow/FlowTypes';
 
@@ -12,10 +13,10 @@ export default class Provisioner extends ProvisionerConfigurableBase {
 
   // Get the region
   getDynamoDBRegion(): string {
-    return 'us-east-1';
+    return Region;
   }
 
-  // Get the list of tables which we want to autoscale
+  // Gets the list of tables which we want to autoscale
   async getTableNamesAsync(): Promise<string[]> {
 
     // Option 1 - All tables (Default)
@@ -29,12 +30,12 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     // return await ...;
   }
 
-  // Get the json settings which control how the specifed table will be autoscaled
+  // Gets the json settings which control how the specifed table will be autoscaled
   // eslint-disable-next-line no-unused-vars
   getTableConfig(data: TableProvisionedAndConsumedThroughput): ProvisionerConfig {
 
     // Option 1 - Default settings for all tables
-    return Default;
+    return DefaultProvisioner;
 
     // Option 2 - Bespoke table specific settings
     // return data.TableName === 'Table1' ? Climbing : Default;
@@ -43,7 +44,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     // return await ...;
   }
 
-  isReadCapacityIncrementRequired(data: TableProvisionedAndConsumedThroughput) {
+  isReadCapacityIncrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
@@ -55,7 +56,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     return this.isCapacityAdjustmentRequired(data, adjustmentContext);
   }
 
-  calculateIncrementedReadCapacityValue(data: TableProvisionedAndConsumedThroughput) {
+  calculateIncrementedReadCapacityValue(data: TableProvisionedAndConsumedThroughput): number {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
@@ -63,7 +64,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     return Throughput.getAdjustedCapacityUnits(adjustmentContext);
   }
 
-  isReadCapacityDecrementRequired(data: TableProvisionedAndConsumedThroughput) {
+  isReadCapacityDecrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
@@ -75,7 +76,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     return this.isCapacityAdjustmentRequired(data, adjustmentContext, d => this.calculateDecrementedReadCapacityValue(d));
   }
 
-  calculateDecrementedReadCapacityValue(data: TableProvisionedAndConsumedThroughput) {
+  calculateDecrementedReadCapacityValue(data: TableProvisionedAndConsumedThroughput): number {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
@@ -83,7 +84,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     return Throughput.getAdjustedCapacityUnits(adjustmentContext);
   }
 
-  isWriteCapacityIncrementRequired(data: TableProvisionedAndConsumedThroughput) {
+  isWriteCapacityIncrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
@@ -95,7 +96,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     return this.isCapacityAdjustmentRequired(data, adjustmentContext);
   }
 
-  calculateIncrementedWriteCapacityValue(data: TableProvisionedAndConsumedThroughput) {
+  calculateIncrementedWriteCapacityValue(data: TableProvisionedAndConsumedThroughput): number {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
@@ -103,7 +104,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     return Throughput.getAdjustedCapacityUnits(adjustmentContext);
   }
 
-  isWriteCapacityDecrementRequired(data: TableProvisionedAndConsumedThroughput) {
+  isWriteCapacityDecrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
@@ -115,7 +116,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     return this.isCapacityAdjustmentRequired(data, adjustmentContext, this.calculateDecrementedWriteCapacityValue);
   }
 
-  calculateDecrementedWriteCapacityValue(data: TableProvisionedAndConsumedThroughput) {
+  calculateDecrementedWriteCapacityValue(data: TableProvisionedAndConsumedThroughput): number {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
@@ -123,11 +124,9 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     return Throughput.getAdjustedCapacityUnits(adjustmentContext);
   }
 
-  getReadCapacityIncrementAdjustmentContext(
-    data: TableProvisionedAndConsumedThroughput,
-    config: ProvisionerConfig): AdjustmentContext {
-
+  getReadCapacityIncrementAdjustmentContext(data: TableProvisionedAndConsumedThroughput, config: ProvisionerConfig): AdjustmentContext {
     invariant(config.ReadCapacity.Increment != null, 'Increment cannot be null');
+
     return {
       TableName: data.TableName,
       IndexName: data.IndexName,
@@ -141,11 +140,9 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     };
   }
 
-  getReadCapacityDecrementAdjustmentContext(
-    data: TableProvisionedAndConsumedThroughput,
-    config: ProvisionerConfig): AdjustmentContext {
-
+  getReadCapacityDecrementAdjustmentContext(data: TableProvisionedAndConsumedThroughput, config: ProvisionerConfig): AdjustmentContext {
     invariant(config.ReadCapacity.Decrement != null, 'Decrement cannot be null');
+
     return {
       TableName: data.TableName,
       IndexName: data.IndexName,
@@ -159,11 +156,9 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     };
   }
 
-  getWriteCapacityIncrementAdjustmentContext(
-    data: TableProvisionedAndConsumedThroughput,
-    config: ProvisionerConfig): AdjustmentContext {
-
+  getWriteCapacityIncrementAdjustmentContext(data: TableProvisionedAndConsumedThroughput, config: ProvisionerConfig): AdjustmentContext {
     invariant(config.WriteCapacity.Increment != null, 'Increment cannot be null');
+
     return {
       TableName: data.TableName,
       IndexName: data.IndexName,
@@ -177,11 +172,9 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     };
   }
 
-  getWriteCapacityDecrementAdjustmentContext(
-    data: TableProvisionedAndConsumedThroughput,
-    config: ProvisionerConfig): AdjustmentContext {
-
+  getWriteCapacityDecrementAdjustmentContext(data: TableProvisionedAndConsumedThroughput, config: ProvisionerConfig): AdjustmentContext {
     invariant(config.WriteCapacity.Decrement != null, 'Decrement cannot be null');
+
     return {
       TableName: data.TableName,
       IndexName: data.IndexName,
@@ -195,9 +188,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     };
   }
 
-  isCapacityAdjustmentRequired(
-    data: TableProvisionedAndConsumedThroughput,
-    adjustmentContext: AdjustmentContext): boolean {
+  isCapacityAdjustmentRequired(data: TableProvisionedAndConsumedThroughput, adjustmentContext: AdjustmentContext): boolean {
 
     // Determine if an adjustment is wanted
     let isAboveMax = this.isAboveMax(adjustmentContext);
