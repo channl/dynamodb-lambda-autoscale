@@ -467,6 +467,7 @@ declare module 'aws-sdk-promise' {
   declare type Datapoint = {
     Timestamp: string,
     Average: number,
+    Sum: number,
     Unit: string,
   };
 }

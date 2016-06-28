@@ -31,7 +31,7 @@ export default class CapacityCalculatorBase {
 
   // Gets the projected capacity value based on the cloudwatch datapoints
   // eslint-disable-next-line no-unused-vars
-  getProjectedValue(data: GetMetricStatisticsResponse): number {
+  getProjectedValue(settings: StatisticSettings, data: GetMetricStatisticsResponse): number {
     invariant(false, 'The method \'getProjectedValue\' was not implemented');
   }
 
@@ -100,17 +100,14 @@ export default class CapacityCalculatorBase {
       invariant(isRead != null, 'Parameter \'isRead\' is not set');
       invariant(tableName != null, 'Parameter \'tableName\' is not set');
 
-      // These values determine how many minutes worth of metrics
-      let statisticCount = 5;
-      let statisticSpanMinutes = 1;
-      let statisticType = 'Sum';
+      let settings = this.getStatisticSettings();
 
       let EndTime = new Date();
       let StartTime = new Date();
-      StartTime.setTime(EndTime - (60000 * statisticSpanMinutes * statisticCount));
+      StartTime.setTime(EndTime - (60000 * settings.spanMinutes * settings.count));
       let MetricName = isRead ? 'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
       let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
-      let period = (statisticSpanMinutes * 60);
+      let period = (settings.spanMinutes * 60);
       let params = {
         Namespace: 'AWS/DynamoDB',
         MetricName,
@@ -118,13 +115,12 @@ export default class CapacityCalculatorBase {
         StartTime,
         EndTime,
         Period: period,
-        Statistics: [ statisticType ],
+        Statistics: [ settings.type ],
         Unit: 'Count'
       };
 
       let statistics = await this.cw.getMetricStatisticsAsync(params);
-      statistics.period = period;
-      let value = this.getProjectedValue(statistics);
+      let value = this.getProjectedValue(settings, statistics);
       let result: ConsumedCapacityDesc = {
         tableName,
         globalSecondaryIndexName,

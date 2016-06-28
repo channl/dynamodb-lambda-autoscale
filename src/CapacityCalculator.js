@@ -15,12 +15,12 @@ export default class CapacityCalculator extends CapacityCalculatorBase {
     return {
       count: 5,
       spanMinutes: 1,
-      type: 'Average',
+      type: 'Sum',
     };
   }
 
   // Gets the projected capacity value based on the cloudwatch datapoints
-  getProjectedValue(data: GetMetricStatisticsResponse) {
+  getProjectedValue(settings: StatisticSettings, data: GetMetricStatisticsResponse) {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     if (data.Datapoints.length === 0) {
@@ -30,7 +30,9 @@ export default class CapacityCalculator extends CapacityCalculatorBase {
     // Default algorithm for projecting a good value for the current ConsumedThroughput is:
     // 1. Query 5 average readings each spanning a minute
     // 2. Select the Max value from those 5 readings
-    let averages = data.Datapoints.map(dp => dp.Sum / data.period);
-    return Math.max(...averages);
+    let spanSeconds = settings.spanMinutes * 60;
+    let averages = data.Datapoints.map(dp => dp.Sum / spanSeconds);
+    let projectedValue = Math.max(...averages);
+    return projectedValue;
   }
 }
