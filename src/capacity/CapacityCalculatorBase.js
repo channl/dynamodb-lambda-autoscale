@@ -142,7 +142,7 @@ export default class CapacityCalculatorBase {
     if (globalSecondaryIndexName) {
       return [
         { Name: 'TableName', Value: tableName},
-        { Name: 'GlobalSecondaryIndex', Value: globalSecondaryIndexName}
+        { Name: 'GlobalSecondaryIndexName', Value: globalSecondaryIndexName}
       ];
     }
 
