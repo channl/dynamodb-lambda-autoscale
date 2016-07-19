@@ -46,6 +46,17 @@ export default class DynamoDB {
     }
   }
 
+  async listAllTableNamesAsync(): Promise<string[]> {
+    let tableNames = [];
+    let lastTable;
+    do {
+      let listTablesResponse = await this.listTablesAsync({ ExclusiveStartTableName: lastTable });
+      tableNames = tableNames.concat(listTablesResponse.TableNames);
+      lastTable = listTablesResponse.LastEvaluatedTableName;
+    } while (lastTable);
+    return tableNames;
+  }
+
   async describeTableAsync(params: DescribeTableRequest): Promise<DescribeTableResponse> {
     let sw = stats.timer('DynamoDB.describeTableAsync').start();
     try {

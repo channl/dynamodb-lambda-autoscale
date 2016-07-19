@@ -20,20 +20,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
   async getTableNamesAsync(): Promise<string[]> {
 
     // Option 1 - All tables (Default)
-    //   The output from ListTables is paginated, with each page
-    //   returning a maximum of 100 table names.
-    let listTablesResponse = await this.db.listTablesAsync();
-    var tableNames = listTablesResponse.TableNames;
-    var lastTable = listTablesResponse.LastEvaluatedTableName;
-
-    while (lastTable) {
-      var params = { ExclusiveStartTableName: lastTable };
-      let listTablesResponse = await this.db.listTablesAsync(params);
-      tableNames = tableNames.concat(listTablesResponse.TableNames);
-      lastTable = listTablesResponse.LastEvaluatedTableName;
-    }
-
-    return tableNames;
+    return await this.db.listAllTableNamesAsync();
 
     // Option 2 - Hardcoded list of tables
     // return ['Table1', 'Table2', 'Table3'];
