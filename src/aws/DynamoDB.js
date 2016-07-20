@@ -1,6 +1,8 @@
 /* @flow */
 import AWS from 'aws-sdk-promise';
 import { json, stats, warning, invariant } from '../Global';
+import Delay from '../utils/Delay';
+import Async from 'async';
 import type {
   DynamoDBOptions,
   DescribeTableRequest,
@@ -13,10 +15,15 @@ import type {
 
 export default class DynamoDB {
   _db: AWS.DynamoDB;
+  _updatePool: Object;
 
   constructor(dynamoOptions: DynamoDBOptions) {
     invariant(dynamoOptions != null, 'Parameter \'dynamoOptions\' is not set');
     this._db = new AWS.DynamoDB(dynamoOptions);
+    this._updatePool = Async.queue(async (params, callback) => {
+      let result = await this.updateTableAndWaitAsync(params, true);
+      callback(result);
+    }, 10);
   }
 
   static create(region: string): DynamoDB {
@@ -73,6 +80,55 @@ export default class DynamoDB {
     } finally {
       sw.end();
     }
+  }
+
+  async delayUntilTableIsActiveAsync(tableName: string): Promise {
+    let isActive = false;
+    let attempt = 0;
+    do {
+      let result = await this.describeTableAsync({ TableName: tableName });
+      isActive = result.Table.TableStatus === 'ACTIVE';
+      if (!isActive) {
+        await Delay.delayAsync(1000);
+        attempt++;
+      }
+    } while (!isActive && attempt < 10);
+  }
+
+  updateTableWithRateLimitAsync(params: UpdateTableRequest,
+    isRateLimited: boolean): Promise<UpdateTableResponse> {
+
+    if (!isRateLimited) {
+      return this.updateTableAndWaitAsync(params, isRateLimited);
+    }
+
+    return new Promise((resolve, reject) => {
+      let sw = stats.timer('DynamoDB.updateTableAsync').start();
+      try {
+        invariant(params != null, 'Parameter \'params\' is not set');
+        this._updatePool.push(params, resolve);
+      } catch (ex) {
+        warning(JSON.stringify({
+          class: 'DynamoDB',
+          function: 'updateTableAsync',
+          params
+        }, null, json.padding));
+        reject(ex);
+      } finally {
+        sw.end();
+      }
+    });
+  }
+
+  async updateTableAndWaitAsync(params: UpdateTableRequest,
+    isRateLimited: boolean): Promise<UpdateTableResponse> {
+
+    let response = await this._db.updateTable(params).promise();
+    if (isRateLimited) {
+      await this.delayUntilTableIsActiveAsync(params.TableName);
+    }
+
+    return response.data;
   }
 
   async updateTableAsync(params: UpdateTableRequest): Promise<UpdateTableResponse> {

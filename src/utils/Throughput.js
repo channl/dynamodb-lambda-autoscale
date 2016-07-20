@@ -1,7 +1,7 @@
 /* @flow */
 /* eslint-disable max-len */
 import { json, warning, invariant } from '../Global';
-import type { TableDescription } from 'aws-sdk-promise';
+import type { TableDescription, DynamoDBProvisionedThroughput } from 'aws-sdk-promise';
 import type { TableProvisionedAndConsumedThroughput, AdjustmentContext } from '../flow/FlowTypes';
 
 export default class Throughput {
@@ -88,7 +88,8 @@ export default class Throughput {
     return Math.round(newValue);
   }
 
-  static getTotalTableProvisionedThroughput(params: TableDescription) {
+  static getTotalTableProvisionedThroughput(params: TableDescription)
+    : DynamoDBProvisionedThroughput {
     try {
       invariant(typeof params !== 'undefined', 'Parameter \'params\' is not set');
 

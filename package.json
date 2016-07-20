@@ -25,6 +25,7 @@
   },
   "dependencies": {},
   "devDependencies": {
+    "async": "^2.0.0",
     "aws-sdk": "2.2.48",
     "aws-sdk-promise": "0.0.2",
     "babel": "^6.5.2",
