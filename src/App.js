@@ -16,7 +16,7 @@ export default class App {
     this._capacityCalculator = new CapacityCalculator();
   }
 
-  async runAsync(event: any, context: any): Promise {
+  async runAsync(event: any, context: any): Promise<void> {
     invariant(event != null, 'The argument \'event\' was null');
     invariant(context != null, 'The argument \'context\' was null');
 
@@ -48,11 +48,8 @@ export default class App {
     this._logMetrics(tableDetails);
 
     // Return an empty response
-    let response = null;
     if (context) {
-      context.succeed(response);
-    } else {
-      return response;
+      context.succeed(null);
     }
   }
 
@@ -103,7 +100,7 @@ export default class App {
     return result;
   }
 
-  async _updateTablesAsync(tableUpdateRequests: UpdateTableRequest[]): Promise {
+  async _updateTablesAsync(tableUpdateRequests: UpdateTableRequest[]): Promise<void> {
     invariant(tableUpdateRequests instanceof Array,
       'The argument \'tableUpdateRequests\' was not an array');
 
@@ -117,7 +114,7 @@ export default class App {
   }
 
   async _updateTableAsync(tableUpdateRequest: UpdateTableRequest,
-    isRateLimitedUpdatingRequired: boolean): Promise {
+    isRateLimitedUpdatingRequired: boolean): Promise<void> {
     invariant(tableUpdateRequest != null, 'The argument \'tableUpdateRequest\' was null');
     invariant(typeof isRateLimitedUpdatingRequired === 'boolean',
       'The argument \'isRateLimitedUpdatingRequired\' was not a boolean');
@@ -160,26 +157,38 @@ export default class App {
       };
     }, {ReadCapacityUnits: 0, WriteCapacityUnits: 0});
 
+    let indexHandler = stJSON['Index.handler'] != null ? {
+      mean: stJSON['Index.handler'].histogram.mean
+    } : undefined;
+
+    let dynamoDBListTablesAsync = stJSON['DynamoDB.listTablesAsync'] != null ? {
+      mean: stJSON['DynamoDB.listTablesAsync'].histogram.mean,
+    } : undefined;
+
+    let dynamoDBDescribeTableAsync = stJSON['DynamoDB.describeTableAsync'] != null ? {
+      mean: stJSON['DynamoDB.describeTableAsync'].histogram.mean,
+    } : undefined;
+
+    let dynamoDBDescribeTableConsumedCapacityAsync =
+      stJSON['DynamoDB.describeTableConsumedCapacityAsync'] != null ?
+        { mean: stJSON['DynamoDB.describeTableConsumedCapacityAsync'].histogram.mean } :
+        undefined;
+
+    let cloudWatchGetMetricStatisticsAsync =
+      stJSON['CloudWatch.getMetricStatisticsAsync'] != null ?
+        { mean: stJSON['CloudWatch.getMetricStatisticsAsync'].histogram.mean } :
+        undefined;
+
+    let tableUpdates = updateRequests != null ? { count: updateRequests.length } :
+      undefined;
+
     log(JSON.stringify({
-      'Index.handler': {
-        mean: stJSON['Index.handler'].histogram.mean
-      },
-      'DynamoDB.listTablesAsync': {
-        mean: stJSON['DynamoDB.listTablesAsync'].histogram.mean,
-      },
-      'DynamoDB.describeTableAsync': {
-        mean: stJSON['DynamoDB.describeTableAsync'].histogram.mean,
-      },
-      'DynamoDB.describeTableConsumedCapacityAsync': {
-        mean: stJSON['DynamoDB.describeTableConsumedCapacityAsync']
-          .histogram.mean,
-      },
-      'CloudWatch.getMetricStatisticsAsync': {
-        mean: stJSON['CloudWatch.getMetricStatisticsAsync'].histogram.mean,
-      },
-      TableUpdates: {
-        count: updateRequests.length,
-      },
+      'Index.handler': indexHandler,
+      'DynamoDB.listTablesAsync': dynamoDBListTablesAsync,
+      'DynamoDB.describeTableAsync': dynamoDBDescribeTableAsync,
+      'DynamoDB.describeTableConsumedCapacityAsync': dynamoDBDescribeTableConsumedCapacityAsync,
+      'CloudWatch.getMetricStatisticsAsync': cloudWatchGetMetricStatisticsAsync,
+      TableUpdates: tableUpdates,
       TotalProvisionedThroughput: totalProvisionedThroughput,
       TotalMonthlyEstimatedCost: totalMonthlyEstimatedCost,
     }, null, json.padding));

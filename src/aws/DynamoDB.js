@@ -82,7 +82,7 @@ export default class DynamoDB {
     }
   }
 
-  async delayUntilTableIsActiveAsync(tableName: string): Promise {
+  async delayUntilTableIsActiveAsync(tableName: string): Promise<void> {
     let isActive = false;
     let attempt = 0;
     do {
