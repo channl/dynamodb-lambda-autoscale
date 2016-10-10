@@ -1,11 +1,17 @@
 /* @flow */
 import type { ProvisionedThroughput, Throughput } from 'aws-sdk-promise';
 
+export type ThrottledEventsDescription = {
+  ThrottledReadEvents: number,
+  ThrottledWriteEvents: number
+}
+
 export type TableProvisionedAndConsumedThroughput = {
   TableName: string,
   IndexName?: string,
   ProvisionedThroughput: ProvisionedThroughput,
   ConsumedThroughput: Throughput,
+  ThrottledEvents: ThrottledEventsDescription
 };
 
 export type GlobalSecondaryIndexConsumedThroughput = {
@@ -17,6 +23,7 @@ export type TableConsumedCapacityDescription = {
   TableName: string,
   ConsumedThroughput: Throughput,
   GlobalSecondaryIndexes: GlobalSecondaryIndexConsumedThroughput[],
+  ThrottledEvents: ThrottledEventsDescription
 };
 
 export type ConsumedCapacityDesc = {

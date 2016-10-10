@@ -70,7 +70,8 @@ export default class ProvisionerConfigurableBase extends ProvisionerBase {
       let tableData = {
         TableName: tableDescription.TableName,
         ProvisionedThroughput: tableDescription.ProvisionedThroughput,
-        ConsumedThroughput: tableConsumedCapacityDescription.ConsumedThroughput
+        ConsumedThroughput: tableConsumedCapacityDescription.ConsumedThroughput,
+        ThrottledEvents: tableConsumedCapacityDescription.ThrottledEvents
       };
 
       let provisionedThroughput = this.getUpdatedProvisionedThroughput(tableData);
@@ -177,7 +178,8 @@ export default class ProvisionerConfigurableBase extends ProvisionerBase {
         TableName: tableDescription.TableName,
         IndexName: gsicc.IndexName,
         ProvisionedThroughput: gsi.ProvisionedThroughput,
-        ConsumedThroughput: gsicc.ConsumedThroughput
+        ConsumedThroughput: gsicc.ConsumedThroughput,
+        ThrottledEvents: gsicc.ThrottledEvents
       });
 
       // eslint-disable-next-line eqeqeq
