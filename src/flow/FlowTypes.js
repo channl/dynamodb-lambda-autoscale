@@ -17,13 +17,14 @@ export type TableProvisionedAndConsumedThroughput = {
 export type GlobalSecondaryIndexConsumedThroughput = {
   IndexName: string,
   ConsumedThroughput: Throughput,
+  ThrottledEvents: ThrottledEventsDescription,
 };
 
 export type TableConsumedCapacityDescription = {
   TableName: string,
   ConsumedThroughput: Throughput,
   GlobalSecondaryIndexes: GlobalSecondaryIndexConsumedThroughput[],
-  ThrottledEvents: ThrottledEventsDescription
+  ThrottledEvents: ThrottledEventsDescription,
 };
 
 export type ConsumedCapacityDesc = {

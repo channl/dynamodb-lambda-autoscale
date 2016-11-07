@@ -174,6 +174,7 @@ export default class ProvisionerConfigurableBase extends ProvisionerBase {
         .GlobalSecondaryIndexes
         .find(i => i.IndexName === gsi.IndexName);
 
+      invariant(gsicc != null, 'Specified GSI could not be found');
       let provisionedThroughput = this.getUpdatedProvisionedThroughput({
         TableName: tableDescription.TableName,
         IndexName: gsicc.IndexName,

@@ -4,7 +4,7 @@ import CloudWatch from '../aws/CloudWatch';
 import type {
   TableConsumedCapacityDescription,
   StatisticSettings,
-  ConsumedCapacityDesc
+  ConsumedCapacityDesc,
 } from '../flow/FlowTypes';
 import type {
   TableDescription,
@@ -54,8 +54,8 @@ export default class CapacityCalculatorBase {
       let gsiWrites = (params.GlobalSecondaryIndexes || [])
         .map(gsi => this.getConsumedCapacityAsync(false, params.TableName, gsi.IndexName));
 
-      let tableTRead = this.getThrottledEventsAsync(true, params.TableName, null)
-      let tableTWrites = this.getThrottledEventsAsync(false, params.TableName, null)
+      let tableTRead = this.getThrottledEventsAsync(true, params.TableName, null);
+      let tableTWrites = this.getThrottledEventsAsync(false, params.TableName, null);
 
       let gsiTReads = (params.GlobalSecondaryIndexes || [])
         .map(gsi => this.getThrottledEventsAsync(true, params.TableName, gsi.IndexName));
@@ -79,17 +79,18 @@ export default class CapacityCalculatorBase {
       let gsis = gsiConsumedReads.map((read, i) => {
         let write = gsiConsumedWrites[i];
         let throttledWrite = gsiThrottledWrites[i];
-        let throttledRead = gsiThrottledReads[i]
+        let throttledRead = gsiThrottledReads[i];
+        let gsiIndexName = read.globalSecondaryIndexName;
+        invariant(gsiIndexName != null, '\'gsiIndexName\' was null');
         return {
-          // $FlowIgnore: The indexName is not null in this case
-          IndexName: read.globalSecondaryIndexName,
+          IndexName: gsiIndexName,
           ConsumedThroughput: {
             ReadCapacityUnits: read.value,
             WriteCapacityUnits: write.value
           },
           ThrottledEvents: {
             ThrottledReadEvents: throttledRead,
-            ThrottledWriteEvents: throttledRead
+            ThrottledWriteEvents: throttledWrite
           }
         };
       });
@@ -189,19 +190,19 @@ export default class CapacityCalculatorBase {
         Unit: 'Count'
       };
 
-    let statistics = await this.cw.getMetricStatisticsAsync(params);
-    let value = this.getProjectedValue(settings, statistics);
+      let statistics = await this.cw.getMetricStatisticsAsync(params);
+      let value = this.getProjectedValue(settings, statistics);
 
-    return value;
-  } catch (ex) {
-    warning(JSON.stringify({
-      class: 'CapacityCalculator',
-      function: 'getThrottledEventsAsync',
-      isRead, tableName, globalSecondaryIndexName,
-    }, null, json.padding));
-    throw ex;
+      return value;
+    } catch (ex) {
+      warning(JSON.stringify({
+        class: 'CapacityCalculator',
+        function: 'getThrottledEventsAsync',
+        isRead, tableName, globalSecondaryIndexName,
+      }, null, json.padding));
+      throw ex;
+    }
   }
-}
 
   getDimensions(tableName: string, globalSecondaryIndexName: ?string): Dimension[] {
     if (globalSecondaryIndexName) {
