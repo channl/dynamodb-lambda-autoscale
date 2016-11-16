@@ -228,7 +228,7 @@ class in a layered approach.  The layers are as follows:
 
 ## Rate Limited Decrement
 
-AWS only allows 4 table decrements in a calendar day.  To account for this we have an included
+AWS only allows 4 table decrements in a calendar day.  To account for this we have included
 an algorithm which segments the remaining time to midnight by the amount of decrements we have left.
 This logic allows us to utilise each 4 decrements as efficiently as possible.  The increments on the
 other hand are unlimited, so the algorithm follows a unique 'sawtooth' profile, dropping the
