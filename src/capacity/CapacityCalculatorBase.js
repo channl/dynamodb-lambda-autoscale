@@ -10,7 +10,7 @@ import type {
   TableDescription,
   GetMetricStatisticsResponse,
   Dimension,
-} from 'aws-sdk-promise';
+} from 'aws-sdk';
 
 export default class CapacityCalculatorBase {
   cw: CloudWatch;

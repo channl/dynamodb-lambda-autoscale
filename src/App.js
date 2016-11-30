@@ -5,7 +5,7 @@ import CostEstimation from './utils/CostEstimation';
 import Throughput from './utils/Throughput';
 import CapacityCalculator from './CapacityCalculator';
 import { json, stats, log, invariant } from './Global';
-import type { UpdateTableRequest } from 'aws-sdk-promise';
+import type { UpdateTableRequest } from 'aws-sdk';
 
 export default class App {
   _provisioner: Provisioner;

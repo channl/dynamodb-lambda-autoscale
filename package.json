@@ -26,8 +26,7 @@
   "dependencies": {},
   "devDependencies": {
     "async": "^2.0.0",
-    "aws-sdk": "2.2.48",
-    "aws-sdk-promise": "0.0.2",
+    "aws-sdk": "2.5.4",
     "babel": "^6.5.2",
     "babel-cli": "^6.7.7",
     "babel-eslint": "^6.0.4",

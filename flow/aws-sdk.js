@@ -1,5 +1,5 @@
 /* @flow */
-declare module 'aws-sdk-promise' {
+declare module 'aws-sdk' {
   declare class DynamoDB {
     constructor(dynamoDBConfig: DynamoDBConfig): void;
 
@@ -49,12 +49,8 @@ declare module 'aws-sdk-promise' {
   }
 
   declare class PromiseRequest<T> {
-    promise(): Promise<DataResponse<T>>;
+    promise(): Promise<T>;
   }
-
-  declare type DataResponse<T> = {
-    data: T,
-  };
 
   declare type ListTablesRequest = {
      ExclusiveStartTableName?: string,

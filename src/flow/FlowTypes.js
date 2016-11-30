@@ -1,5 +1,5 @@
 /* @flow */
-import type { ProvisionedThroughput, Throughput } from 'aws-sdk-promise';
+import type { ProvisionedThroughput, Throughput } from 'aws-sdk';
 
 export type ThrottledEventsDescription = {
   ThrottledReadEvents: number,

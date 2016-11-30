@@ -1,5 +1,5 @@
 /* @flow */
-import AWS from 'aws-sdk-promise';
+import AWS from 'aws-sdk';
 import { json, stats, warning, invariant } from '../Global';
 import Delay from '../utils/Delay';
 import Async from 'async';
@@ -11,7 +11,7 @@ import type {
   UpdateTableResponse,
   ListTablesRequest,
   ListTablesResponse,
-} from 'aws-sdk-promise';
+} from 'aws-sdk';
 
 export default class DynamoDB {
   _db: AWS.DynamoDB;
@@ -40,8 +40,7 @@ export default class DynamoDB {
   async listTablesAsync(params: ?ListTablesRequest): Promise<ListTablesResponse> {
     let sw = stats.timer('DynamoDB.listTablesAsync').start();
     try {
-      let res = await this._db.listTables(params).promise();
-      return res.data;
+      return await this._db.listTables(params).promise();
     } catch (ex) {
       warning(JSON.stringify({
         class: 'DynamoDB',
@@ -68,8 +67,7 @@ export default class DynamoDB {
     let sw = stats.timer('DynamoDB.describeTableAsync').start();
     try {
       invariant(params != null, 'Parameter \'params\' is not set');
-      let res = await this._db.describeTable(params).promise();
-      return res.data;
+      return await this._db.describeTable(params).promise();
     } catch (ex) {
       warning(JSON.stringify({
         class: 'DynamoDB',
@@ -128,15 +126,14 @@ export default class DynamoDB {
       await this.delayUntilTableIsActiveAsync(params.TableName);
     }
 
-    return response.data;
+    return response;
   }
 
   async updateTableAsync(params: UpdateTableRequest): Promise<UpdateTableResponse> {
     let sw = stats.timer('DynamoDB.updateTableAsync').start();
     try {
       invariant(params != null, 'Parameter \'params\' is not set');
-      let res = await this._db.updateTable(params).promise();
-      return res.data;
+      return await this._db.updateTable(params).promise();
     } catch (ex) {
       warning(JSON.stringify({
         class: 'DynamoDB',

@@ -1,7 +1,7 @@
 /* @flow */
 /* eslint-disable no-unused-vars */
 import { invariant } from '../Global';
-import type { TableDescription, UpdateTableRequest } from 'aws-sdk-promise';
+import type { TableDescription, UpdateTableRequest } from 'aws-sdk';
 import type { TableConsumedCapacityDescription } from '../flow/FlowTypes';
 import DynamoDB from '../aws/DynamoDB';
 import CloudWatch from '../aws/CloudWatch';

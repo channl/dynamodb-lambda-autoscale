@@ -1,7 +1,7 @@
 /* @flow */
 /* eslint-disable max-len */
 import { json, warning, invariant } from '../Global';
-import type { TableDescription, DynamoDBProvisionedThroughput } from 'aws-sdk-promise';
+import type { TableDescription, DynamoDBProvisionedThroughput } from 'aws-sdk';
 import type { TableProvisionedAndConsumedThroughput, AdjustmentContext } from '../flow/FlowTypes';
 
 export default class Throughput {

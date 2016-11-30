@@ -2,7 +2,7 @@
 import { invariant } from './Global';
 import { Region } from './configuration/Region';
 import CapacityCalculatorBase from './capacity/CapacityCalculatorBase';
-import type { GetMetricStatisticsResponse } from 'aws-sdk-promise';
+import type { GetMetricStatisticsResponse } from 'aws-sdk';
 import type { StatisticSettings } from './flow/FlowTypes';
 
 export default class CapacityCalculator extends CapacityCalculatorBase {
