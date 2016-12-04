@@ -7,7 +7,7 @@ import type {
   UpdateTableRequest,
   GlobalSecondaryIndexUpdate,
   Throughput,
-} from 'aws-sdk-promise';
+} from 'aws-sdk';
 import type {
   TableProvisionedAndConsumedThroughput,
   TableConsumedCapacityDescription,

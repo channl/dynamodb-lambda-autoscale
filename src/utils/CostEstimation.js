@@ -2,7 +2,7 @@
 import { json, warning, invariant } from '../Global';
 import type {
   Throughput,
-} from 'aws-sdk-promise';
+} from 'aws-sdk';
 
 export default class CostEstimation {
 

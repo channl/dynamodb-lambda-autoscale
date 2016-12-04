@@ -1,11 +1,11 @@
 /* @flow */
-import AWS from 'aws-sdk-promise';
+import AWS from 'aws-sdk';
 import { json, stats, warning, invariant } from '../Global';
 import type {
   CloudWatchOptions,
   GetMetricStatisticsRequest,
   GetMetricStatisticsResponse,
-} from 'aws-sdk-promise';
+} from 'aws-sdk';
 
 export default class CloudWatch {
   _cw: AWS.CloudWatch;
@@ -30,8 +30,7 @@ export default class CloudWatch {
     let sw = stats.timer('CloudWatch.getMetricStatisticsAsync').start();
     try {
       invariant(params != null, 'Parameter \'params\' is not set');
-      let res = await this._cw.getMetricStatistics(params).promise();
-      return res.data;
+      return await this._cw.getMetricStatistics(params).promise();
     } catch (ex) {
       warning(JSON.stringify({
         class: 'CloudWatch',
