@@ -6,7 +6,12 @@
 + Flexible code over configuration style
 + Autoscale table and global secondary indexes
 + Autoscale multiple tables
++ Autoscale by fixed settings
++ Autoscale by provisioned capacity utilisation
++ Autoscale by throttled event metrics
++ Optimised for large spikes in usage and hotkey issues by incorporating throttled event metrics
 + Optimised performance using concurrent queries
++ RateLimitedDecrement as imposed by AWS
 + Statistics via 'measured'
 + AWS credential configuration via 'dotenv'
 + Optimised lambda package via 'webpack'
@@ -34,12 +39,12 @@ configuration.  Please see the respective websites for advantages / reasons.
   2. Clone your fork
   3. Create a new file in the root folder called 'config.env.production'
   4. Put your AWS credentials into the file in the following format, only if you want to run a local test (not needed for lambda)
-  
+
     ```javascript
     AWS_ACCESS_KEY_ID="###################"
     AWS_SECRET_ACCESS_KEY="###############"
     ```
-    
+
   5. Update [Region.json](./src/configuration/Region.json) to match the region of your DynamoDB instance
   6. Run 'npm install'
   7. Run 'npm run build'
@@ -52,7 +57,7 @@ configuration.  Please see the respective websites for advantages / reasons.
 2. Create an AWS Policy and Role
   1. Create a policy called 'DynamoDBLambdaAutoscale'
   2. Use the following content to give access to dynamoDB, cloudwatch and lambda logging
-  
+
       ```javascript
       {
         "Version": "2012-10-17",
@@ -73,7 +78,7 @@ configuration.  Please see the respective websites for advantages / reasons.
         ]
       }
       ```
-  
+
   3. Create a role called 'DynamoDBLambdaAutoscale'
   4. Attach the newly created policy to the role
 3. Create a AWS Lambda function
@@ -97,9 +102,9 @@ A breakdown of the configuration behaviour is as follows:
   - Separate 'Read' and 'Write' capacity adjustment strategies
   - Separate asymmetric 'Increment' and 'Decrement' capacity adjustment strategies
   - Read/Write provisioned capacity increased
-    - when capacity utilisation > 90%
-    - by 3 units or to 110% of the current consumed capacity, which ever is the greater
-    - with hard min/max limits of 1 and 10 respectively
+    - when capacity utilisation > 75% or throttled events in the last minute > 25
+    - by 3 + (0.7 * throttled events) units or by 30% + (0.7 * throttled events) of provisioned value or to 130% of the current consumed capacity, which ever is the greater
+    - with hard min/max limits of 1 and 100 respectively
   - Read/Write provisioned capacity decreased
     - when capacity utilisation < 30% AND
     - when at least 60 minutes have passed since the last increment AND
@@ -107,7 +112,7 @@ A breakdown of the configuration behaviour is as follows:
     - when the adjustment will be at least 5 units AND
     - when we are allowed to utilise 1 of our 4 AWS enforced decrements
     - to the consumed throughput value
-    - with hard min/max limits of 1 and 10 respectively
+    - with hard min/max limits of 1 and 100 respectively
 
 ## Strategy Settings
 
@@ -117,6 +122,7 @@ both the Increment/Decrement.  Using the options below many different strategies
 - ReadCapacity.Max : (Optional) Define a maximum allowed capacity, otherwise unlimited
 - ReadCapacity.Increment : (Optional) Defined an increment strategy
 - ReadCapacity.Increment.When : (Required) Define when capacity should be incremented
+- ReadCapacity.Increment.When.ThrottledEventsPerMinuteIsAbove : (Optional) Define a threshold at which throttled events trigger an increment
 - ReadCapacity.Increment.When.UtilisationIsAbovePercent : (Optional) Define a percentage utilisation upper threshold at which capacity is subject to recalculation
 - ReadCapacity.Increment.When.UtilisationIsBelowPercent : (Optional) Define a percentage utilisation lower threshold at which capacity is subject to recalculation, possible but non sensical for increments however.
 - ReadCapacity.Increment.When.AfterLastIncrementMinutes : (Optional) Define a grace period based off the previous increment in which capacity adjustments should not occur
@@ -126,6 +132,7 @@ both the Increment/Decrement.  Using the options below many different strategies
 - ReadCapacity.Increment.By.ConsumedPercent : (Optional) Define a 'relative' percentage adjustment based on the current ConsumedCapacity
 - ReadCapacity.Increment.By.ProvisionedPercent : (Optional) Define a 'relative' percentage adjustment based on the current ProvisionedCapacity
 - ReadCapacity.Increment.By.Units : (Optional) Define a 'relative' unit adjustment
+- ReadCapacity.Increment.By.ThrottledEventsWithMultiplier : (Optional) Define a 'multiple' of the throttled events in the last minute which are added to all other 'By' unit adjustments
 - ReadCapacity.Increment.To : (Optional) Define an 'absolute' value to change the capacity to
 - ReadCapacity.Increment.To.ConsumedPercent : (Optional) Define an 'absolute' percentage adjustment based on the current ConsumedCapacity
 - ReadCapacity.Increment.To.ProvisionedPercent : (Optional) Define an 'absolute' percentage adjustment based on the current ProvisionedCapacity
@@ -136,16 +143,19 @@ A sample of the strategy setting json is...
 {
   "ReadCapacity": {
     "Min": 1,
-    "Max": 10,
+    "Max": 100,
     "Increment": {
       "When": {
-        "UtilisationIsAbovePercent": 90
+        "UtilisationIsAbovePercent": 75,
+        "ThrottledEventsPerMinuteIsAbove": 25
       },
       "By": {
-        "Units": 3
+        "Units": 3,
+        "ProvisionedPercent": 30,
+        "ThrottledEventsWithMultiplier": 0.7
       },
       "To": {
-        "ConsumedPercent": 110
+        "ConsumedPercent": 130
       }
     },
     "Decrement": {
@@ -162,16 +172,19 @@ A sample of the strategy setting json is...
   },
   "WriteCapacity": {
     "Min": 1,
-    "Max": 10,
+    "Max": 100,
     "Increment": {
       "When": {
-        "UtilisationIsAbovePercent": 90
+        "UtilisationIsAbovePercent": 75,
+        "ThrottledEventsPerMinuteIsAbove": 25
       },
       "By": {
-        "Units": 3
+        "Units": 3,
+        "ProvisionedPercent": 30,
+        "ThrottledEventsWithMultiplier": 0.7
       },
       "To": {
-        "ConsumedPercent": 110
+        "ConsumedPercent": 130
       }
     },
     "Decrement": {
@@ -225,6 +238,9 @@ class in a layered approach.  The layers are as follows:
 - [Provisioner.js](./src/Provisioner.js) concrete implementation which provides very robust autoscaling logic which can be manipulated with a 'strategy' settings json object
 - [ProvisionerConfigurableBase.js](./src/provisioning/ProvisionerConfigurableBase.js) abstract base class which breaks out the 'getTableUpdateAsync' function into more manageable abstract methods
 - [ProvisionerBase.js](./src/provisioning/ProvisionerBase.js) the root abstract base class which defines the minimum contract
+
+## Throttled Events
+Throttled events are now taken into account as part of the provisioning calculation.  A multiple of the events can be added to the existing calculation so that both large spikes in usage and hot key issues are both dealt with.
 
 ## Rate Limited Decrement
 
