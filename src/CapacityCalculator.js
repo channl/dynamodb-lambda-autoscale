@@ -20,6 +20,14 @@ export default class CapacityCalculator extends CapacityCalculatorBase {
     };
   }
 
+  getThrottledEventStatisticSettings(): StatisticSettings {
+    return {
+      count: 1,
+      spanMinutes: 1,
+      type: 'Sum',
+    };
+  }
+
   // Gets the projected capacity value based on the cloudwatch datapoints
   getProjectedValue(settings: StatisticSettings, data: GetMetricStatisticsResponse) {
     invariant(data != null, 'Parameter \'data\' is not set');

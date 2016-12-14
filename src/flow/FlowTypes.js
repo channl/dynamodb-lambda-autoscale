@@ -54,6 +54,7 @@ export type CapacityAdjustmentConfig = {
 export type WhenConfig = {
   UtilisationIsAbovePercent?: number,
   UtilisationIsBelowPercent?: number,
+  ThrottledEventsPerMinuteIsAbove?: number,
   AfterLastIncrementMinutes?: number,
   AfterLastDecrementMinutes?: number,
   UnitAdjustmentGreaterThan?: number,
@@ -63,6 +64,7 @@ export type ByToConfig = {
   ConsumedPercent?: number,
   ProvisionedPercent?: number,
   Units?: number,
+  ThrottledEventsWithMultiplier?: number,
 };
 
 export type StatisticSettings = {
@@ -78,9 +80,10 @@ export type AdjustmentContext = {
   AdjustmentType: 'increment' | 'decrement',
   ProvisionedValue: number,
   ConsumedValue: number,
+  ThrottledEvents: number,
   UtilisationPercent: number,
   CapacityConfig: CapacityConfig,
-  CapacityAdjustmentConfig: CapacityAdjustmentConfig,
+  CapacityAdjustmentConfig?: CapacityAdjustmentConfig,
 };
 
 export type AdjustmentData = {
@@ -88,6 +91,7 @@ export type AdjustmentData = {
   isBelowMin: boolean,
   isAboveThreshold: boolean,
   isBelowThreshold: boolean,
+  isAboveThrottledEventThreshold: boolean,
   isAfterLastDecreaseGracePeriod: boolean,
   isAfterLastIncreaseGracePeriod: boolean,
   isAdjustmentWanted: boolean,

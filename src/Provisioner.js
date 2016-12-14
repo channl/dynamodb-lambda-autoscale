@@ -47,10 +47,6 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
-    if (config.ReadCapacity.Increment == null) {
-      return false;
-    }
-
     let adjustmentContext = this.getReadCapacityIncrementAdjustmentContext(data, config);
     return this.isCapacityAdjustmentRequired(data, adjustmentContext);
   }
@@ -67,12 +63,8 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
-    if (config.ReadCapacity.Decrement == null) {
-      return false;
-    }
-
     let adjustmentContext = this.getReadCapacityDecrementAdjustmentContext(data, config);
-    return this.isCapacityAdjustmentRequired(data, adjustmentContext, d => this.calculateDecrementedReadCapacityValue(d));
+    return this.isCapacityAdjustmentRequired(data, adjustmentContext);
   }
 
   calculateDecrementedReadCapacityValue(data: TableProvisionedAndConsumedThroughput): number {
@@ -87,10 +79,6 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
-    if (config.WriteCapacity.Increment == null) {
-      return false;
-    }
-
     let adjustmentContext = this.getWriteCapacityIncrementAdjustmentContext(data, config);
     return this.isCapacityAdjustmentRequired(data, adjustmentContext);
   }
@@ -107,12 +95,8 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     invariant(data != null, 'Parameter \'data\' is not set');
 
     let config = this.getTableConfig(data);
-    if (config.WriteCapacity.Decrement == null) {
-      return false;
-    }
-
     let adjustmentContext = this.getWriteCapacityDecrementAdjustmentContext(data, config);
-    return this.isCapacityAdjustmentRequired(data, adjustmentContext, this.calculateDecrementedWriteCapacityValue);
+    return this.isCapacityAdjustmentRequired(data, adjustmentContext);
   }
 
   calculateDecrementedWriteCapacityValue(data: TableProvisionedAndConsumedThroughput): number {
@@ -124,85 +108,122 @@ export default class Provisioner extends ProvisionerConfigurableBase {
   }
 
   getReadCapacityIncrementAdjustmentContext(data: TableProvisionedAndConsumedThroughput, config: ProvisionerConfig): AdjustmentContext {
-    invariant(config.ReadCapacity.Increment != null, 'Increment cannot be null');
+    invariant(data != null, 'Argument \'data\' cannot be null');
+    invariant(config != null, 'Argument \'config\' cannot be null');
 
-    return {
+    let context = {
       TableName: data.TableName,
       IndexName: data.IndexName,
       CapacityType: 'read',
       AdjustmentType: 'increment',
       ProvisionedValue: data.ProvisionedThroughput.ReadCapacityUnits,
       ConsumedValue: data.ConsumedThroughput.ReadCapacityUnits,
+      ThrottledEvents: data.ThrottledEvents.ThrottledReadEvents,
       UtilisationPercent: (data.ConsumedThroughput.ReadCapacityUnits / data.ProvisionedThroughput.ReadCapacityUnits) * 100,
       CapacityConfig: config.ReadCapacity,
-      CapacityAdjustmentConfig: config.ReadCapacity.Increment,
     };
+
+    if (config.ReadCapacity.Increment != null) {
+      // $FlowIgnore
+      context.CapacityAdjustmentConfig = config.ReadCapacity.Increment;
+    }
+
+    return context;
   }
 
   getReadCapacityDecrementAdjustmentContext(data: TableProvisionedAndConsumedThroughput, config: ProvisionerConfig): AdjustmentContext {
-    invariant(config.ReadCapacity.Decrement != null, 'Decrement cannot be null');
+    invariant(data != null, 'Argument \'data\' cannot be null');
+    invariant(config != null, 'Argument \'config\' cannot be null');
 
-    return {
+    let context = {
       TableName: data.TableName,
       IndexName: data.IndexName,
       CapacityType: 'read',
       AdjustmentType: 'decrement',
       ProvisionedValue: data.ProvisionedThroughput.ReadCapacityUnits,
       ConsumedValue: data.ConsumedThroughput.ReadCapacityUnits,
+      ThrottledEvents: data.ThrottledEvents.ThrottledReadEvents,
       UtilisationPercent: (data.ConsumedThroughput.ReadCapacityUnits / data.ProvisionedThroughput.ReadCapacityUnits) * 100,
       CapacityConfig: config.ReadCapacity,
-      CapacityAdjustmentConfig: config.ReadCapacity.Decrement,
     };
+
+    if (config.ReadCapacity.Decrement != null) {
+      // $FlowIgnore
+      context.CapacityAdjustmentConfig = config.ReadCapacity.Decrement;
+    }
+
+    return context;
   }
 
   getWriteCapacityIncrementAdjustmentContext(data: TableProvisionedAndConsumedThroughput, config: ProvisionerConfig): AdjustmentContext {
-    invariant(config.WriteCapacity.Increment != null, 'Increment cannot be null');
+    invariant(data != null, 'Argument \'data\' cannot be null');
+    invariant(config != null, 'Argument \'config\' cannot be null');
 
-    return {
+    let context = {
       TableName: data.TableName,
       IndexName: data.IndexName,
       CapacityType: 'write',
       AdjustmentType: 'increment',
       ProvisionedValue: data.ProvisionedThroughput.WriteCapacityUnits,
       ConsumedValue: data.ConsumedThroughput.WriteCapacityUnits,
+      ThrottledEvents: data.ThrottledEvents.ThrottledWriteEvents,
       UtilisationPercent: (data.ConsumedThroughput.WriteCapacityUnits / data.ProvisionedThroughput.WriteCapacityUnits) * 100,
       CapacityConfig: config.WriteCapacity,
-      CapacityAdjustmentConfig: config.WriteCapacity.Increment,
     };
+
+    if (config.WriteCapacity.Increment != null) {
+      // $FlowIgnore
+      context.CapacityAdjustmentConfig = config.WriteCapacity.Increment;
+    }
+
+    return context;
   }
 
   getWriteCapacityDecrementAdjustmentContext(data: TableProvisionedAndConsumedThroughput, config: ProvisionerConfig): AdjustmentContext {
-    invariant(config.WriteCapacity.Decrement != null, 'Decrement cannot be null');
+    invariant(data != null, 'Argument \'data\' cannot be null');
+    invariant(config != null, 'Argument \'config\' cannot be null');
 
-    return {
+    let context = {
       TableName: data.TableName,
       IndexName: data.IndexName,
       CapacityType: 'write',
       AdjustmentType: 'decrement',
       ProvisionedValue: data.ProvisionedThroughput.WriteCapacityUnits,
       ConsumedValue: data.ConsumedThroughput.WriteCapacityUnits,
+      ThrottledEvents: data.ThrottledEvents.ThrottledWriteEvents,
       UtilisationPercent: (data.ConsumedThroughput.WriteCapacityUnits / data.ProvisionedThroughput.WriteCapacityUnits) * 100,
       CapacityConfig: config.WriteCapacity,
-      CapacityAdjustmentConfig: config.WriteCapacity.Decrement,
     };
+
+    if (config.WriteCapacity.Decrement != null) {
+      // $FlowIgnore
+      context.CapacityAdjustmentConfig = config.WriteCapacity.Decrement;
+    }
+
+    return context;
   }
 
   isCapacityAdjustmentRequired(data: TableProvisionedAndConsumedThroughput, adjustmentContext: AdjustmentContext): boolean {
 
     // Determine if an adjustment is wanted
-    let isAboveMax = this.isAboveMax(adjustmentContext);
-    let isBelowMin = this.isBelowMin(adjustmentContext);
-    let isAboveThreshold = this.isAboveThreshold(adjustmentContext);
-    let isBelowThreshold = this.isBelowThreshold(adjustmentContext);
-    let isAdjustmentWanted = (isAboveMax || isBelowMin || isAboveThreshold || isBelowThreshold);
+    let isProvAboveMax = adjustmentContext.CapacityConfig.Max == null ? false : adjustmentContext.ProvisionedValue > adjustmentContext.CapacityConfig.Max;
+    let isProvBelowMax = adjustmentContext.CapacityConfig.Max == null ? true : adjustmentContext.ProvisionedValue < adjustmentContext.CapacityConfig.Max;
+    let isProvBelowMin = adjustmentContext.CapacityConfig.Min == null ? adjustmentContext.ProvisionedValue < 1 : adjustmentContext.ProvisionedValue < adjustmentContext.CapacityConfig.Min;
+    let isProvAboveMin = adjustmentContext.CapacityConfig.Min == null ? adjustmentContext.ProvisionedValue > 1 : adjustmentContext.ProvisionedValue > adjustmentContext.CapacityConfig.Min;
+    let isUtilAboveThreshold = this.isAboveThreshold(adjustmentContext);
+    let isUtilBelowThreshold = this.isBelowThreshold(adjustmentContext);
+    let isThrottledEventsAboveThreshold = this.isThrottledEventsAboveThreshold(adjustmentContext);
+    let isAdjustmentWanted = adjustmentContext.AdjustmentType === 'increment' ?
+      (isProvBelowMin || isUtilAboveThreshold || isUtilBelowThreshold || isThrottledEventsAboveThreshold) && isProvBelowMax :
+      (isProvAboveMax || isUtilAboveThreshold || isUtilBelowThreshold) && isProvAboveMin;
 
     // Determine if an adjustment is allowed under the rate limiting rules
-    let isAfterLastDecreaseGracePeriod = this.isAfterLastAdjustmentGracePeriod(
-      data.ProvisionedThroughput.LastDecreaseDateTime,
-      adjustmentContext.CapacityAdjustmentConfig.When.AfterLastDecrementMinutes);
-    let isAfterLastIncreaseGracePeriod = this.isAfterLastAdjustmentGracePeriod(
-      data.ProvisionedThroughput.LastIncreaseDateTime,
-      adjustmentContext.CapacityAdjustmentConfig.When.AfterLastIncrementMinutes);
+    let isAfterLastDecreaseGracePeriod = adjustmentContext.CapacityAdjustmentConfig == null ||
+      this.isAfterLastAdjustmentGracePeriod(data.ProvisionedThroughput.LastDecreaseDateTime,
+        adjustmentContext.CapacityAdjustmentConfig.When.AfterLastDecrementMinutes);
+    let isAfterLastIncreaseGracePeriod = adjustmentContext.CapacityAdjustmentConfig == null ||
+      this.isAfterLastAdjustmentGracePeriod(data.ProvisionedThroughput.LastIncreaseDateTime,
+        adjustmentContext.CapacityAdjustmentConfig.When.AfterLastIncrementMinutes);
 
     let isReadDecrementAllowed = adjustmentContext.AdjustmentType === 'decrement' ?
       RateLimitedDecrement.isDecrementAllowed(data, adjustmentContext, d => this.calculateDecrementedReadCapacityValue(d)) :
@@ -213,10 +234,11 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     // Package up the configuration and the results so that we can produce
     // some effective logs
     let adjustmentData = {
-      isAboveMax,
-      isBelowMin,
-      isAboveThreshold,
-      isBelowThreshold,
+      isAboveMax: isProvAboveMax,
+      isBelowMin: isProvBelowMin,
+      isAboveThreshold: isUtilAboveThreshold,
+      isBelowThreshold: isUtilBelowThreshold,
+      isAboveThrottledEventThreshold: isThrottledEventsAboveThreshold,
       isAfterLastDecreaseGracePeriod,
       isAfterLastIncreaseGracePeriod,
       isAdjustmentWanted,
@@ -228,16 +250,24 @@ export default class Provisioner extends ProvisionerConfigurableBase {
     return isAdjustmentWanted && isAdjustmentAllowed;
   }
 
-  isAboveThreshold(context: AdjustmentContext): boolean {
+  isThrottledEventsAboveThreshold(context: AdjustmentContext): boolean {
     invariant(context != null, 'Parameter \'context\' is not set');
 
-    if (context.CapacityAdjustmentConfig.When.UtilisationIsAbovePercent == null) {
+    if (context.CapacityAdjustmentConfig == null ||
+      context.CapacityAdjustmentConfig.When.ThrottledEventsPerMinuteIsAbove == null ||
+      context.AdjustmentType === 'decrement') {
       return false;
     }
 
-    if (context.CapacityConfig.Max != null &&
-      context.ProvisionedValue >= context.CapacityConfig.Max) {
-      // Already at maximum allowed ProvisionedValue
+    return context.ThrottledEvents >
+      context.CapacityAdjustmentConfig.When.ThrottledEventsPerMinuteIsAbove;
+  }
+
+  isAboveThreshold(context: AdjustmentContext): boolean {
+    invariant(context != null, 'Parameter \'context\' is not set');
+
+    if (context.CapacityAdjustmentConfig == null ||
+      context.CapacityAdjustmentConfig.When.UtilisationIsAbovePercent == null) {
       return false;
     }
 
@@ -248,38 +278,13 @@ export default class Provisioner extends ProvisionerConfigurableBase {
   isBelowThreshold(context: AdjustmentContext): boolean {
     invariant(context != null, 'Parameter \'context\' is not set');
 
-    if (context.CapacityAdjustmentConfig.When.UtilisationIsBelowPercent == null) {
-      return false;
-    }
-
-    let min = context.CapacityConfig.Min != null ? context.CapacityConfig.Min : 1;
-    if (context.ProvisionedValue <= min) {
-      // Already at minimum allowed ProvisionedValue
+    if (context.CapacityAdjustmentConfig == null ||
+      context.CapacityAdjustmentConfig.When.UtilisationIsBelowPercent == null) {
       return false;
     }
 
     let utilisationPercent = (context.ConsumedValue / context.ProvisionedValue) * 100;
     return utilisationPercent < context.CapacityAdjustmentConfig.When.UtilisationIsBelowPercent;
-  }
-
-  isAboveMax(context: AdjustmentContext): boolean {
-    invariant(context != null, 'Parameter \'context\' is not set');
-
-    if (context.CapacityConfig.Max == null) {
-      return false;
-    }
-
-    return context.ProvisionedValue > context.CapacityConfig.Max;
-  }
-
-  isBelowMin(context: AdjustmentContext): boolean {
-    invariant(context != null, 'Parameter \'context\' is not set');
-
-    if (context.CapacityConfig.Min == null) {
-      return false;
-    }
-
-    return context.ProvisionedValue < context.CapacityConfig.Min;
   }
 
   isAfterLastAdjustmentGracePeriod(lastAdjustmentDateTime: string, afterLastAdjustmentMinutes?: number): boolean {

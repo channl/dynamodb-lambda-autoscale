@@ -29,6 +29,11 @@ export default class CapacityCalculatorBase {
     invariant(false, 'The method \'getStatisticSettings\' was not implemented');
   }
 
+  // Gets the settings used to fetch the throttled events statistics
+  getThrottledEventStatisticSettings(): StatisticSettings {
+    invariant(false, 'The method \'getThrottledEventStatisticSettings\' was not implemented');
+  }
+
   // Gets the projected capacity value based on the cloudwatch datapoints
   // eslint-disable-next-line no-unused-vars
   getProjectedValue(settings: StatisticSettings, data: GetMetricStatisticsResponse): number {
@@ -153,6 +158,13 @@ export default class CapacityCalculatorBase {
         value
       };
 
+/*
+      log(JSON.stringify({
+        ...result,
+        statistics: statistics.Datapoints.map(dp => dp.Sum / (settings.spanMinutes * 60)),
+      }));
+*/
+
       return result;
     } catch (ex) {
       warning(JSON.stringify({
@@ -171,7 +183,7 @@ export default class CapacityCalculatorBase {
       invariant(isRead != null, 'Parameter \'isRead\' is not set');
       invariant(tableName != null, 'Parameter \'tableName\' is not set');
 
-      let settings = this.getStatisticSettings();
+      let settings = this.getThrottledEventStatisticSettings();
 
       let EndTime = new Date();
       let StartTime = new Date();

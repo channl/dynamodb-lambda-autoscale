@@ -24,7 +24,8 @@ export default class RateLimitedDecrement {
     let adjustment = Math.abs(adjustmentContext.ProvisionedValue) -
       Math.abs(calcNewValueFunc(data));
 
-    if (adjustmentContext.CapacityAdjustmentConfig.When.UnitAdjustmentGreaterThan != null &&
+    if (adjustmentContext.CapacityAdjustmentConfig != null &&
+      adjustmentContext.CapacityAdjustmentConfig.When.UnitAdjustmentGreaterThan != null &&
       adjustment <= adjustmentContext.CapacityAdjustmentConfig.When.UnitAdjustmentGreaterThan &&
       this.getNowDate().valueOf() <
       this.getLastAllowedDecrementDate().valueOf()) {
@@ -60,13 +61,19 @@ export default class RateLimitedDecrement {
     // Handle grace periods
     let withIncrementGracePeriod = this.parseDate(data.ProvisionedThroughput.LastIncreaseDateTime);
 
-    withIncrementGracePeriod.setMinutes(withIncrementGracePeriod.getMinutes() +
-      adjustmentContext.CapacityAdjustmentConfig.When.AfterLastIncrementMinutes);
+    if (adjustmentContext.CapacityAdjustmentConfig != null &&
+      adjustmentContext.CapacityAdjustmentConfig.When.AfterLastIncrementMinutes != null) {
+      let incMins = adjustmentContext.CapacityAdjustmentConfig.When.AfterLastIncrementMinutes;
+      withIncrementGracePeriod.setMinutes(withIncrementGracePeriod.getMinutes() + incMins);
+    }
 
     let withDecrementGracePeriod = this.parseDate(data.ProvisionedThroughput.LastDecreaseDateTime);
 
-    withDecrementGracePeriod.setMinutes(withDecrementGracePeriod.getMinutes() +
-      adjustmentContext.CapacityAdjustmentConfig.When.AfterLastDecrementMinutes);
+    if (adjustmentContext.CapacityAdjustmentConfig != null &&
+      adjustmentContext.CapacityAdjustmentConfig.When.AfterLastDecrementMinutes != null) {
+      let decMins = adjustmentContext.CapacityAdjustmentConfig.When.AfterLastDecrementMinutes;
+      withDecrementGracePeriod.setMinutes(withDecrementGracePeriod.getMinutes() + decMins);
+    }
 
     let result = new Date(Math.max(
       nextDecrementDate, withIncrementGracePeriod, withDecrementGracePeriod));

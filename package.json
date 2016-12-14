@@ -21,7 +21,7 @@
     "check": "flow check",
     "build": "gulp dist",
     "start": "node ./scripts/start.js",
-    "debug": "node-debug ./scripts/start.js"
+    "debug": "node --inspect --debug-brk ./scripts/start.js"
   },
   "dependencies": {},
   "devDependencies": {

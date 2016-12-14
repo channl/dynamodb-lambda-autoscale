@@ -39,40 +39,49 @@ export default class Throughput {
 
     let direction = adjustmentContext.AdjustmentType === 'increment' ? 1 : -1;
 
+    // Increment 'by' throttled events and configured mutliplier, increments only!
+    let byTE = (direction === 1 && adjustmentContext.CapacityAdjustmentConfig != null && adjustmentContext.CapacityAdjustmentConfig.By != null && adjustmentContext.CapacityAdjustmentConfig.By.ThrottledEventsWithMultiplier != null) ?
+      (adjustmentContext.ThrottledEvents * adjustmentContext.CapacityAdjustmentConfig.By.ThrottledEventsWithMultiplier) :
+      0;
+    let byTEVal = adjustmentContext.ProvisionedValue + byTE;
+
     // Increment 'by' percentage of provisioned
-    let byP = (adjustmentContext.CapacityAdjustmentConfig.By != null && adjustmentContext.CapacityAdjustmentConfig.By.ProvisionedPercent != null) ?
-      adjustmentContext.ProvisionedValue + (((adjustmentContext.ProvisionedValue / 100) * adjustmentContext.CapacityAdjustmentConfig.By.ProvisionedPercent) * direction) :
-      adjustmentContext.ProvisionedValue;
+    let byP = (adjustmentContext.CapacityAdjustmentConfig != null && adjustmentContext.CapacityAdjustmentConfig.By != null && adjustmentContext.CapacityAdjustmentConfig.By.ProvisionedPercent != null) ?
+      (((adjustmentContext.ProvisionedValue / 100) * adjustmentContext.CapacityAdjustmentConfig.By.ProvisionedPercent) * direction) :
+      0;
+    let byPVal = adjustmentContext.ProvisionedValue + byP + byTE;
 
     // Increment 'by' percentage of consumed
-    let byC = (adjustmentContext.CapacityAdjustmentConfig.By != null && adjustmentContext.CapacityAdjustmentConfig.By.ConsumedPercent != null) ?
-      adjustmentContext.ProvisionedValue + (((adjustmentContext.ConsumedValue / 100) * adjustmentContext.CapacityAdjustmentConfig.By.ConsumedPercent) * direction) :
-      adjustmentContext.ProvisionedValue;
+    let byC = (adjustmentContext.CapacityAdjustmentConfig != null && adjustmentContext.CapacityAdjustmentConfig.By != null && adjustmentContext.CapacityAdjustmentConfig.By.ConsumedPercent != null) ?
+      (((adjustmentContext.ConsumedValue / 100) * adjustmentContext.CapacityAdjustmentConfig.By.ConsumedPercent) * direction) :
+      0;
+    let byCVal = adjustmentContext.ProvisionedValue + byC + byTE;
 
     // Increment 'by' unit value
-    let byU = (adjustmentContext.CapacityAdjustmentConfig.By != null && adjustmentContext.CapacityAdjustmentConfig.By.Units != null) ?
-      adjustmentContext.ProvisionedValue + (adjustmentContext.CapacityAdjustmentConfig.By.Units * direction) :
-      adjustmentContext.ProvisionedValue;
+    let byU = (adjustmentContext.CapacityAdjustmentConfig != null && adjustmentContext.CapacityAdjustmentConfig.By != null && adjustmentContext.CapacityAdjustmentConfig.By.Units != null) ?
+      (adjustmentContext.CapacityAdjustmentConfig.By.Units * direction) :
+      0;
+    let byUVal = adjustmentContext.ProvisionedValue + byU + byTE;
 
     // Increment 'to' percentage of provisioned
-    let toP = (adjustmentContext.CapacityAdjustmentConfig.To != null && adjustmentContext.CapacityAdjustmentConfig.To.ProvisionedPercent != null) ?
+    let toP = (adjustmentContext.CapacityAdjustmentConfig != null && adjustmentContext.CapacityAdjustmentConfig.To != null && adjustmentContext.CapacityAdjustmentConfig.To.ProvisionedPercent != null) ?
       (adjustmentContext.ProvisionedValue / 100) * adjustmentContext.CapacityAdjustmentConfig.To.ProvisionedPercent :
       adjustmentContext.ProvisionedValue;
 
     // Increment 'to' percentage of consumed
-    let toC = (adjustmentContext.CapacityAdjustmentConfig.To != null && adjustmentContext.CapacityAdjustmentConfig.To.ConsumedPercent != null) ?
+    let toC = (adjustmentContext.CapacityAdjustmentConfig != null && adjustmentContext.CapacityAdjustmentConfig.To != null && adjustmentContext.CapacityAdjustmentConfig.To.ConsumedPercent != null) ?
       (adjustmentContext.ConsumedValue / 100) * adjustmentContext.CapacityAdjustmentConfig.To.ConsumedPercent :
       adjustmentContext.ProvisionedValue;
 
     // Increment 'to' unit value
-    let toU = (adjustmentContext.CapacityAdjustmentConfig.To != null && adjustmentContext.CapacityAdjustmentConfig.To.Units != null) ?
+    let toU = (adjustmentContext.CapacityAdjustmentConfig != null && adjustmentContext.CapacityAdjustmentConfig.To != null && adjustmentContext.CapacityAdjustmentConfig.To.Units != null) ?
       adjustmentContext.CapacityAdjustmentConfig.To.Units :
       adjustmentContext.ProvisionedValue;
 
     // Select the greatest calculated increment
     let newValue = adjustmentContext.AdjustmentType === 'increment' ?
-      Math.max(byP, byC, byU, toP, toC, toU) :
-      Math.min(byP, byC, byU, toP, toC, toU);
+      Math.max(byPVal, byCVal, byUVal, byTEVal, toP, toC, toU) :
+      Math.min(byPVal, byCVal, byUVal, byTEVal, toP, toC, toU);
 
     // Limit to 'max' if it is specified
     if (adjustmentContext.CapacityConfig.Max != null) {

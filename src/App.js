@@ -71,7 +71,7 @@ export default class App {
 
     log('Getting table consumed capacity description', tableName);
     let consumedCapacityTableDescription = await this._capacityCalculator
-      .describeTableConsumedCapacityAsync(tableDescription, 1);
+      .describeTableConsumedCapacityAsync(tableDescription);
 
     log('Getting table update request', tableName);
     let tableUpdateRequest = await this._provisioner.getTableUpdateAsync(tableDescription,
