@@ -1,6 +1,7 @@
 /* @flow */
-import { json, stats, warning, invariant } from '../Global';
 import CloudWatch from '../aws/CloudWatch';
+import Instrument from '../logging/Instrument';
+import invariant from 'invariant';
 import type {
   TableConsumedCapacityDescription,
   StatisticSettings,
@@ -40,180 +41,149 @@ export default class CapacityCalculatorBase {
     invariant(false, 'The method \'getProjectedValue\' was not implemented');
   }
 
+  // $FlowIgnore
+  @Instrument.timer()
   async describeTableConsumedCapacityAsync(params: TableDescription)
     : Promise<TableConsumedCapacityDescription> {
-    let sw = stats
-      .timer('DynamoDB.describeTableConsumedCapacityAsync')
-      .start();
 
-    try {
-      invariant(params != null, 'Parameter \'params\' is not set');
+    invariant(params != null, 'Parameter \'params\' is not set');
 
-      // Make all the requests concurrently
-      let tableRead = this.getConsumedCapacityAsync(true, params.TableName, null);
-      let tableWrite = this.getConsumedCapacityAsync(false, params.TableName, null);
+    // Make all the requests concurrently
+    let tableRead = this.getConsumedCapacityAsync(true, params.TableName, null);
+    let tableWrite = this.getConsumedCapacityAsync(false, params.TableName, null);
 
-      let gsiReads = (params.GlobalSecondaryIndexes || [])
-        .map(gsi => this.getConsumedCapacityAsync(true, params.TableName, gsi.IndexName));
+    let gsiReads = (params.GlobalSecondaryIndexes || [])
+      .map(gsi => this.getConsumedCapacityAsync(true, params.TableName, gsi.IndexName));
 
-      let gsiWrites = (params.GlobalSecondaryIndexes || [])
-        .map(gsi => this.getConsumedCapacityAsync(false, params.TableName, gsi.IndexName));
+    let gsiWrites = (params.GlobalSecondaryIndexes || [])
+      .map(gsi => this.getConsumedCapacityAsync(false, params.TableName, gsi.IndexName));
 
-      let tableTRead = this.getThrottledEventsAsync(true, params.TableName, null);
-      let tableTWrites = this.getThrottledEventsAsync(false, params.TableName, null);
+    let tableTRead = this.getThrottledEventsAsync(true, params.TableName, null);
+    let tableTWrites = this.getThrottledEventsAsync(false, params.TableName, null);
 
-      let gsiTReads = (params.GlobalSecondaryIndexes || [])
-        .map(gsi => this.getThrottledEventsAsync(true, params.TableName, gsi.IndexName));
+    let gsiTReads = (params.GlobalSecondaryIndexes || [])
+      .map(gsi => this.getThrottledEventsAsync(true, params.TableName, gsi.IndexName));
 
-      let gsiTWrites = (params.GlobalSecondaryIndexes || [])
-        .map(gsi => this.getThrottledEventsAsync(false, params.TableName, gsi.IndexName));
+    let gsiTWrites = (params.GlobalSecondaryIndexes || [])
+      .map(gsi => this.getThrottledEventsAsync(false, params.TableName, gsi.IndexName));
 
-      // Await on the results
-      let tableConsumedRead = await tableRead;
-      let tableConsumedWrite = await tableWrite;
-      let gsiConsumedReads = await Promise.all(gsiReads);
-      let gsiConsumedWrites = await Promise.all(gsiWrites);
+    // Await on the results
+    let tableConsumedRead = await tableRead;
+    let tableConsumedWrite = await tableWrite;
+    let gsiConsumedReads = await Promise.all(gsiReads);
+    let gsiConsumedWrites = await Promise.all(gsiWrites);
 
-      // Await on throttled info
-      let tableThrottledRead = await tableTRead;
-      let tableThrottledWrite = await tableTWrites;
-      let gsiThrottledReads = await Promise.all(gsiTReads);
-      let gsiThrottledWrites = await Promise.all(gsiTWrites);
+    // Await on throttled info
+    let tableThrottledRead = await tableTRead;
+    let tableThrottledWrite = await tableTWrites;
+    let gsiThrottledReads = await Promise.all(gsiTReads);
+    let gsiThrottledWrites = await Promise.all(gsiTWrites);
 
-      // Format results
-      let gsis = gsiConsumedReads.map((read, i) => {
-        let write = gsiConsumedWrites[i];
-        let throttledWrite = gsiThrottledWrites[i];
-        let throttledRead = gsiThrottledReads[i];
-        let gsiIndexName = read.globalSecondaryIndexName;
-        invariant(gsiIndexName != null, '\'gsiIndexName\' was null');
-        return {
-          IndexName: gsiIndexName,
-          ConsumedThroughput: {
-            ReadCapacityUnits: read.value,
-            WriteCapacityUnits: write.value
-          },
-          ThrottledEvents: {
-            ThrottledReadEvents: throttledRead,
-            ThrottledWriteEvents: throttledWrite
-          }
-        };
-      });
-
+    // Format results
+    let gsis = gsiConsumedReads.map((read, i) => {
+      let write = gsiConsumedWrites[i];
+      let throttledWrite = gsiThrottledWrites[i];
+      let throttledRead = gsiThrottledReads[i];
+      let gsiIndexName = read.globalSecondaryIndexName;
+      invariant(gsiIndexName != null, '\'gsiIndexName\' was null');
       return {
-        TableName: params.TableName,
+        IndexName: gsiIndexName,
         ConsumedThroughput: {
-          ReadCapacityUnits: tableConsumedRead.value,
-          WriteCapacityUnits: tableConsumedWrite.value
+          ReadCapacityUnits: read.value,
+          WriteCapacityUnits: write.value
         },
         ThrottledEvents: {
-          ThrottledReadEvents: tableThrottledRead,
-          ThrottledWriteEvents: tableThrottledWrite
-        },
-        GlobalSecondaryIndexes: gsis
+          ThrottledReadEvents: throttledRead,
+          ThrottledWriteEvents: throttledWrite
+        }
       };
-    } catch (ex) {
-      warning(JSON.stringify({
-        class: 'CapacityCalculator',
-        function: 'describeTableConsumedCapacityAsync',
-        params,
-      }, null, json.padding));
-      throw ex;
-    } finally {
-      sw.end();
-    }
+    });
+
+    return {
+      TableName: params.TableName,
+      ConsumedThroughput: {
+        ReadCapacityUnits: tableConsumedRead.value,
+        WriteCapacityUnits: tableConsumedWrite.value
+      },
+      ThrottledEvents: {
+        ThrottledReadEvents: tableThrottledRead,
+        ThrottledWriteEvents: tableThrottledWrite
+      },
+      GlobalSecondaryIndexes: gsis
+    };
   }
 
   async getConsumedCapacityAsync(
     isRead: boolean, tableName: string, globalSecondaryIndexName: ?string):
     Promise<ConsumedCapacityDesc> {
-    try {
-      invariant(isRead != null, 'Parameter \'isRead\' is not set');
-      invariant(tableName != null, 'Parameter \'tableName\' is not set');
+    invariant(isRead != null, 'Parameter \'isRead\' is not set');
+    invariant(tableName != null, 'Parameter \'tableName\' is not set');
 
-      let settings = this.getStatisticSettings();
+    let settings = this.getStatisticSettings();
 
-      let EndTime = new Date();
-      let StartTime = new Date();
-      StartTime.setTime(EndTime - (60000 * settings.spanMinutes * settings.count));
-      let MetricName = isRead ? 'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
-      let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
-      let period = (settings.spanMinutes * 60);
-      let params = {
-        Namespace: 'AWS/DynamoDB',
-        MetricName,
-        Dimensions,
-        StartTime,
-        EndTime,
-        Period: period,
-        Statistics: [ settings.type ],
-        Unit: 'Count'
-      };
+    let EndTime = new Date();
+    let StartTime = new Date();
+    StartTime.setTime(EndTime - (60000 * settings.spanMinutes * settings.count));
+    let MetricName = isRead ? 'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
+    let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
+    let period = (settings.spanMinutes * 60);
+    let params = {
+      Namespace: 'AWS/DynamoDB',
+      MetricName,
+      Dimensions,
+      StartTime,
+      EndTime,
+      Period: period,
+      Statistics: [ settings.type ],
+      Unit: 'Count'
+    };
 
-      let statistics = await this.cw.getMetricStatisticsAsync(params);
-      let value = this.getProjectedValue(settings, statistics);
-      let result: ConsumedCapacityDesc = {
-        tableName,
-        globalSecondaryIndexName,
-        value
-      };
+    let statistics = await this.cw.getMetricStatisticsAsync(params);
+    let value = this.getProjectedValue(settings, statistics);
+    let result: ConsumedCapacityDesc = {
+      tableName,
+      globalSecondaryIndexName,
+      value
+    };
 
 /*
-      log(JSON.stringify({
-        ...result,
-        statistics: statistics.Datapoints.map(dp => dp.Sum / (settings.spanMinutes * 60)),
-      }));
+    log(JSON.stringify({
+      ...result,
+      statistics: statistics.Datapoints.map(dp => dp.Sum / (settings.spanMinutes * 60)),
+    }));
 */
 
-      return result;
-    } catch (ex) {
-      warning(JSON.stringify({
-        class: 'CapacityCalculator',
-        function: 'getConsumedCapacityAsync',
-        isRead, tableName, globalSecondaryIndexName,
-      }, null, json.padding));
-      throw ex;
-    }
+    return result;
   }
 
   async getThrottledEventsAsync(
     isRead: boolean, tableName: string, globalSecondaryIndexName: ?string):
     Promise<number> {
-    try {
-      invariant(isRead != null, 'Parameter \'isRead\' is not set');
-      invariant(tableName != null, 'Parameter \'tableName\' is not set');
+    invariant(isRead != null, 'Parameter \'isRead\' is not set');
+    invariant(tableName != null, 'Parameter \'tableName\' is not set');
 
-      let settings = this.getThrottledEventStatisticSettings();
+    let settings = this.getThrottledEventStatisticSettings();
 
-      let EndTime = new Date();
-      let StartTime = new Date();
-      StartTime.setTime(EndTime - (60000 * settings.spanMinutes * settings.count));
-      let MetricName = isRead ? 'ReadThrottleEvents' : 'WriteThrottleEvents';
-      let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
-      let period = (settings.spanMinutes * 60);
-      let params = {
-        Namespace: 'AWS/DynamoDB',
-        MetricName,
-        Dimensions,
-        StartTime,
-        EndTime,
-        Period: period,
-        Statistics: [ settings.type ],
-        Unit: 'Count'
-      };
+    let EndTime = new Date();
+    let StartTime = new Date();
+    StartTime.setTime(EndTime - (60000 * settings.spanMinutes * settings.count));
+    let MetricName = isRead ? 'ReadThrottleEvents' : 'WriteThrottleEvents';
+    let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
+    let period = (settings.spanMinutes * 60);
+    let params = {
+      Namespace: 'AWS/DynamoDB',
+      MetricName,
+      Dimensions,
+      StartTime,
+      EndTime,
+      Period: period,
+      Statistics: [ settings.type ],
+      Unit: 'Count'
+    };
 
-      let statistics = await this.cw.getMetricStatisticsAsync(params);
-      let value = this.getProjectedValue(settings, statistics);
-
-      return value;
-    } catch (ex) {
-      warning(JSON.stringify({
-        class: 'CapacityCalculator',
-        function: 'getThrottledEventsAsync',
-        isRead, tableName, globalSecondaryIndexName,
-      }, null, json.padding));
-      throw ex;
-    }
+    let statistics = await this.cw.getMetricStatisticsAsync(params);
+    let value = this.getProjectedValue(settings, statistics);
+    return value;
   }
 
   getDimensions(tableName: string, globalSecondaryIndexName: ?string): Dimension[] {

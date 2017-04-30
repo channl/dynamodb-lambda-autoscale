@@ -1,13 +1,15 @@
 /* @flow */
+import Instrument from './logging/Instrument';
+import log from './logging/log';
+import invariant from 'invariant';
 import Provisioner from './Provisioner';
 import Stats from './utils/Stats';
 import CostEstimation from './utils/CostEstimation';
-import Throughput from './utils/Throughput';
+import ThroughputUtils from './utils/ThroughputUtils';
 import CapacityCalculator from './CapacityCalculator';
-import { json, stats, log, invariant } from './Global';
 import type { UpdateTableRequest } from 'aws-sdk';
 
-export default class App {
+export default class DynamoDBAutoscaler {
   _provisioner: Provisioner;
   _capacityCalculator: CapacityCalculator;
 
@@ -16,17 +18,9 @@ export default class App {
     this._capacityCalculator = new CapacityCalculator();
   }
 
-  async runAsync(event: any, context: any): Promise<void> {
-    invariant(event != null, 'The argument \'event\' was null');
-    invariant(context != null, 'The argument \'context\' was null');
-
-    let sw = stats.timer('Index.handler').start();
-
-    // In local mode the json padding can be overridden
-    if (event.json && event.json.padding) {
-      json.padding = event.json.padding;
-    }
-
+  // $FlowIgnore
+  @Instrument.timer()
+  async runAsync(): Promise<void> {
     log('Getting table names');
     let tableNames = await this._provisioner.getTableNamesAsync();
 
@@ -42,14 +36,6 @@ export default class App {
       log('Updated tables');
     } else {
       log('No table updates required');
-    }
-
-    sw.end();
-    this._logMetrics(tableDetails);
-
-    // Return an empty response
-    if (context) {
-      context.succeed(null);
     }
   }
 
@@ -78,15 +64,17 @@ export default class App {
       consumedCapacityTableDescription);
 
     // Log the monthlyEstimatedCost
-    let totalTableProvisionedThroughput = Throughput
+    let totalTableProvisionedThroughput = ThroughputUtils
       .getTotalTableProvisionedThroughput(tableDescription);
 
     let monthlyEstimatedCost = CostEstimation
       .getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
 
+/*
     stats
       .counter('DynamoDB.monthlyEstimatedCost')
       .inc(monthlyEstimatedCost);
+*/
 
     let result = {
       tableName,
@@ -135,6 +123,7 @@ export default class App {
       .map(({tableUpdateRequest}) => tableUpdateRequest);
   }
 
+  /*
   _logMetrics(tableDetails: Object[]) {
     invariant(tableDetails instanceof Array,
       'The argument \'tableDetails\' was not an array');
@@ -191,6 +180,7 @@ export default class App {
       TableUpdates: tableUpdates,
       TotalProvisionedThroughput: totalProvisionedThroughput,
       TotalMonthlyEstimatedCost: totalMonthlyEstimatedCost,
-    }, null, json.padding));
+    }));
   }
+  */
 }
