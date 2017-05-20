@@ -1,0 +1,10 @@
+{
+  "ReadCapacity": {
+    "Min": 1,
+    "Max": 1
+  },
+  "WriteCapacity": {
+    "Min": 1,
+    "Max": 1
+  }
+}

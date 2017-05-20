@@ -1,40 +1,71 @@
 /* @flow */
-import Instrument from './logging/Instrument';
+import CloudWatch from '../aws/CloudWatch';
+import Instrument from '../logging/Instrument';
 import invariant from 'invariant';
-import type { TableConsumedCapacityDescription, StatisticSettings, ConsumedCapacityDesc } from './flow/FlowTypes';
-import type { TableDescription, GetMetricStatisticsResponse, Dimension, GetMetricStatisticsRequest } from 'aws-sdk';
+import type {
+  TableConsumedCapacityDescription,
+  StatisticSettings,
+  ConsumedCapacityDesc,
+} from '../flow/FlowTypes';
+import type {
+  TableDescription,
+  GetMetricStatisticsResponse,
+  Dimension,
+} from 'aws-sdk';
 
-export default class ConsumedThroughputCalculator {
-  _getMetricStatisticsAsync: (params: GetMetricStatisticsRequest) => Promise<GetMetricStatisticsResponse>;
+export default class CapacityCalculatorBase {
+  cw: CloudWatch;
 
-  constructor(
-    getMetricStatisticsAsync: (params: GetMetricStatisticsRequest) => Promise<GetMetricStatisticsResponse>) {
-    this._getMetricStatisticsAsync = getMetricStatisticsAsync;
+  constructor() {
+    this.cw = CloudWatch.create(this.getCloudWatchRegion());
+  }
+
+  // Get the region
+  getCloudWatchRegion(): string {
+    invariant(false, 'The method \'getCloudWatchRegion\' was not implemented');
+  }
+
+  // Gets the settings used to fetch the consumed throughput statistics
+  getStatisticSettings(): StatisticSettings {
+    invariant(false, 'The method \'getStatisticSettings\' was not implemented');
+  }
+
+  // Gets the settings used to fetch the throttled events statistics
+  getThrottledEventStatisticSettings(): StatisticSettings {
+    invariant(false, 'The method \'getThrottledEventStatisticSettings\' was not implemented');
+  }
+
+  // Gets the projected capacity value based on the cloudwatch datapoints
+  // eslint-disable-next-line no-unused-vars
+  getProjectedValue(settings: StatisticSettings, data: GetMetricStatisticsResponse): number {
+    invariant(false, 'The method \'getProjectedValue\' was not implemented');
   }
 
   // $FlowIgnore
   @Instrument.timer()
-  async describeTableConsumedCapacityAsync(params: TableDescription): Promise<TableConsumedCapacityDescription> {
+  async describeTableConsumedCapacityAsync(params: TableDescription)
+    : Promise<TableConsumedCapacityDescription> {
+
     invariant(params != null, 'Parameter \'params\' is not set');
 
     // Make all the requests concurrently
-    let tableRead = this._getConsumedCapacityAsync(true, params.TableName, null);
-    let tableWrite = this._getConsumedCapacityAsync(false, params.TableName, null);
+    let tableRead = this.getConsumedCapacityAsync(true, params.TableName, null);
+    let tableWrite = this.getConsumedCapacityAsync(false, params.TableName, null);
 
     let gsiReads = (params.GlobalSecondaryIndexes || [])
-      .map(gsi => this._getConsumedCapacityAsync(true, params.TableName, gsi.IndexName));
+      .map(gsi => this.getConsumedCapacityAsync(true, params.TableName, gsi.IndexName));
 
     let gsiWrites = (params.GlobalSecondaryIndexes || [])
-      .map(gsi => this._getConsumedCapacityAsync(false, params.TableName, gsi.IndexName));
+      .map(gsi => this.getConsumedCapacityAsync(false, params.TableName, gsi.IndexName));
 
-    let tableTRead = this._getThrottledEventsAsync(true, params.TableName, null);
-    let tableTWrites = this._getThrottledEventsAsync(false, params.TableName, null);
+    let tableTRead = this.getThrottledEventsAsync(true, params.TableName, null);
+    let tableTWrites = this.getThrottledEventsAsync(false, params.TableName, null);
 
     let gsiTReads = (params.GlobalSecondaryIndexes || [])
-      .map(gsi => this._getThrottledEventsAsync(true, params.TableName, gsi.IndexName));
+      .map(gsi => this.getThrottledEventsAsync(true, params.TableName, gsi.IndexName));
 
     let gsiTWrites = (params.GlobalSecondaryIndexes || [])
-      .map(gsi => this._getThrottledEventsAsync(false, params.TableName, gsi.IndexName));
+      .map(gsi => this.getThrottledEventsAsync(false, params.TableName, gsi.IndexName));
 
     // Await on the results
     let tableConsumedRead = await tableRead;
@@ -82,19 +113,19 @@ export default class ConsumedThroughputCalculator {
     };
   }
 
-  async _getConsumedCapacityAsync(
+  async getConsumedCapacityAsync(
     isRead: boolean, tableName: string, globalSecondaryIndexName: ?string):
     Promise<ConsumedCapacityDesc> {
     invariant(isRead != null, 'Parameter \'isRead\' is not set');
     invariant(tableName != null, 'Parameter \'tableName\' is not set');
 
-    let settings = this._getStatisticSettings();
+    let settings = this.getStatisticSettings();
 
     let EndTime = new Date();
     let StartTime = new Date();
     StartTime.setTime(EndTime - (60000 * settings.spanMinutes * settings.count));
     let MetricName = isRead ? 'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
-    let Dimensions = this._getDimensions(tableName, globalSecondaryIndexName);
+    let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
     let period = (settings.spanMinutes * 60);
     let params = {
       Namespace: 'AWS/DynamoDB',
@@ -107,8 +138,8 @@ export default class ConsumedThroughputCalculator {
       Unit: 'Count'
     };
 
-    let statistics = await this._getMetricStatisticsAsync(params);
-    let value = this._getProjectedValue(settings, statistics);
+    let statistics = await this.cw.getMetricStatisticsAsync(params);
+    let value = this.getProjectedValue(settings, statistics);
     let result: ConsumedCapacityDesc = {
       tableName,
       globalSecondaryIndexName,
@@ -125,19 +156,19 @@ export default class ConsumedThroughputCalculator {
     return result;
   }
 
-  async _getThrottledEventsAsync(
+  async getThrottledEventsAsync(
     isRead: boolean, tableName: string, globalSecondaryIndexName: ?string):
     Promise<number> {
     invariant(isRead != null, 'Parameter \'isRead\' is not set');
     invariant(tableName != null, 'Parameter \'tableName\' is not set');
 
-    let settings = this._getThrottledEventStatisticSettings();
+    let settings = this.getThrottledEventStatisticSettings();
 
     let EndTime = new Date();
     let StartTime = new Date();
     StartTime.setTime(EndTime - (60000 * settings.spanMinutes * settings.count));
     let MetricName = isRead ? 'ReadThrottleEvents' : 'WriteThrottleEvents';
-    let Dimensions = this._getDimensions(tableName, globalSecondaryIndexName);
+    let Dimensions = this.getDimensions(tableName, globalSecondaryIndexName);
     let period = (settings.spanMinutes * 60);
     let params = {
       Namespace: 'AWS/DynamoDB',
@@ -150,12 +181,12 @@ export default class ConsumedThroughputCalculator {
       Unit: 'Count'
     };
 
-    let statistics = await this._getMetricStatisticsAsync(params);
-    let value = this._getProjectedValue(settings, statistics);
+    let statistics = await this.cw.getMetricStatisticsAsync(params);
+    let value = this.getProjectedValue(settings, statistics);
     return value;
   }
 
-  _getDimensions(tableName: string, globalSecondaryIndexName: ?string): Dimension[] {
+  getDimensions(tableName: string, globalSecondaryIndexName: ?string): Dimension[] {
     if (globalSecondaryIndexName) {
       return [
         { Name: 'TableName', Value: tableName},
@@ -164,40 +195,5 @@ export default class ConsumedThroughputCalculator {
     }
 
     return [ { Name: 'TableName', Value: tableName} ];
-  }
-
-    // Gets the settings used to fetch the consumed throughput statistics
-  _getStatisticSettings(): StatisticSettings {
-    return {
-      count: 5,
-      spanMinutes: 1,
-      type: 'Sum',
-    };
-  }
-
-  // Gets the settings used to fetch the throttled events statistics
-  _getThrottledEventStatisticSettings(): StatisticSettings {
-    return {
-      count: 1,
-      spanMinutes: 1,
-      type: 'Sum',
-    };
-  }
-
-  // Gets the projected capacity value based on the cloudwatch datapoints
-  _getProjectedValue(settings: StatisticSettings, data: GetMetricStatisticsResponse): number {
-    invariant(data != null, 'Parameter \'data\' is not set');
-
-    if (data.Datapoints.length === 0) {
-      return 0;
-    }
-
-    // Default algorithm for projecting a good value for the current ConsumedThroughput is:
-    // 1. Query 5 average readings each spanning a minute
-    // 2. Select the Max value from those 5 readings
-    let spanSeconds = settings.spanMinutes * 60;
-    let averages = data.Datapoints.map(dp => dp.Sum / spanSeconds);
-    let projectedValue = Math.max(...averages);
-    return projectedValue;
   }
 }

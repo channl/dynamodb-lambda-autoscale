@@ -17,16 +17,26 @@ import type {
 
 export default class DynamoDB {
   _db: AWS.DynamoDB;
-  _updatePool: Async.QueueObject<UpdateTableRequest, UpdateTableResponse>;
+  _updatePool: Object;
 
   constructor(dynamoOptions: DynamoDBConfig) {
     invariant(dynamoOptions != null, 'Parameter \'dynamoOptions\' is not set');
     this._db = new AWS.DynamoDB(dynamoOptions);
-    this._updatePool = Async.queue(async (params: UpdateTableRequest,
-      callback: (result: UpdateTableResponse) => void) => {
+    this._updatePool = Async.queue(async (params, callback) => {
       let result = await this.updateTableAndWaitAsync(params, true);
       callback(result);
     }, 10);
+  }
+
+  static create(region: string): DynamoDB {
+    var options = {
+      region,
+      apiVersion: '2012-08-10',
+      dynamoDbCrc32: false,
+      httpOptions: { timeout: 5000 }
+    };
+
+    return new DynamoDB(options);
   }
 
   // $FlowIgnore

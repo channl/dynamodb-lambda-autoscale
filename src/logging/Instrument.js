@@ -3,7 +3,7 @@ import Metrics from '../metrics/Metrics';
 
 export default class Instrument {
 
-  static timer() {
+  static timer(): any {
     return function (target: Object, name: string, descriptor: any) {
       let method = descriptor.value;
       descriptor.value = function (...args) {

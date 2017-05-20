@@ -458,9 +458,9 @@ declare module 'aws-sdk' {
   }
 
   declare type CloudWatchOptions = {
-    apiVersion?: string,
+    apiVersion: string,
     region: string,
-    httpOptions?: HTTPOptions,
+    httpOptions: HTTPOptions,
   };
 
   declare type GetMetricStatisticsResponse = {

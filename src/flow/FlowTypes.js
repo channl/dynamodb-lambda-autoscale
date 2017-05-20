@@ -1,28 +1,10 @@
 /* @flow */
-import type { ProvisionedThroughput, Throughput, UpdateTableRequest, TableDescription } from 'aws-sdk';
-
-export type GetTableNamesAsyncFunc = () => Promise<string[]>;
-
-export type GetTableConsumedCapacityAsyncFunc =
-  (tableDescription: TableDescription) => Promise<TableConsumedCapacityDescription>;
-
-export type GetTableUpdateAsyncFunc =
-  (tableDescription: TableDescription, tableConsumedCapacityDescription: TableConsumedCapacityDescription)
-    => Promise<?UpdateTableRequest>;
-
-export type TableDetails = {
-  tableName: string,
-  tableDescription: TableDescription,
-  consumedCapacityTableDescription: TableConsumedCapacityDescription,
-  tableUpdateRequest: ?UpdateTableRequest,
-  totalTableProvisionedThroughput: Throughput,
-  monthlyEstimatedCost: number,
-};
+import type { ProvisionedThroughput, Throughput } from 'aws-sdk';
 
 export type ThrottledEventsDescription = {
   ThrottledReadEvents: number,
   ThrottledWriteEvents: number
-};
+}
 
 export type TableProvisionedAndConsumedThroughput = {
   TableName: string,
