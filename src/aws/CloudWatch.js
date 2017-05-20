@@ -1,6 +1,5 @@
 /* @flow */
 import invariant from 'invariant';
-import warning from 'warning';
 import Instrument from '../logging/Instrument';
 import AWS from 'aws-sdk';
 import type {
@@ -15,16 +14,6 @@ export default class CloudWatch {
   constructor(cloudWatchOptions: CloudWatchOptions) {
     invariant(cloudWatchOptions != null, 'Parameter \'cloudWatchOptions\' is not set');
     this._cw = new AWS.CloudWatch(cloudWatchOptions);
-  }
-
-  static create(region: string): CloudWatch {
-    var options = {
-      region,
-      apiVersion: '2010-08-01',
-      httpOptions: { timeout: 5000 }
-    };
-
-    return new CloudWatch(options);
   }
 
   // $FlowIgnore

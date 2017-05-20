@@ -45,7 +45,7 @@ configuration.  Please see the respective websites for advantages / reasons.
     AWS_SECRET_ACCESS_KEY="###############"
     ```
 
-  5. Update [Region.json](./src/configuration/Region.json) to match the region of your DynamoDB instance
+  5. ...
   6. Run 'npm install'
   7. Run 'npm run build'
   8. Verify this has created a 'dist.zip' file
@@ -96,7 +96,7 @@ configuration.  Please see the respective websites for advantages / reasons.
 
 The default setup in the [Provisioner.js](./src/Provisioner.js) allows for a quick no touch setup.
 A breakdown of the configuration behaviour is as follows:
-- AWS region is set to 'us-east-1' via [Region.json](./src/configuration/Region.json) configuration
+- ...
 - Autoscales all tables and indexes
 - Autoscaling 'Strategy' settings are defined in [DefaultProvisioner.json](./src/configuration/DefaultProvisioner.json) and are as follows
   - Separate 'Read' and 'Write' capacity adjustment strategies
@@ -209,14 +209,10 @@ used by other autoscaling community projects.  Rather than being limited to a st
 configuration file or even the 'strategy' settings above you have the option to extend the [ProvisionerBase.js](./src/provisioning/ProvisionerBase.js)
 abstract base class for yourself and programmatically implement any desired logic.
 
-The following three functions are all that is required to complete the provisioning functionality.  
+The following two functions are all that is required to complete the provisioning functionality.  
 As per the 'React' style, only actual updates to the ProvisionedCapacity will be sent to AWS.
 
 ```javascript
-getDynamoDBRegion(): string {
-  // Return the AWS region as a string
-}
-
 async getTableNamesAsync(): Promise<string[]> {
   // Return the table names to apply autoscaling to as a string array promise
 }

@@ -10,22 +10,33 @@
     "type": "git",
     "url": "http://github.com/channl/dynamodb-lambda-autoscale.git"
   },
-  "main": "dist/index.js",
+  "main": "src/Index.js",
+  "files": [
+    "flow",
+    "src",
+    "README.md"
+  ],
   "options": {
     "mocha": "--require resources/mocha-bootload src/**/__tests__/**/*.js"
   },
   "scripts": {
     "test": "npm run lint && npm run check",
     "lint": "eslint src",
-    "check": "flow check"
+    "flowcheck": "flow check",
+    "flowcoverage": "flow coverage"
   },
   "dependencies": {
     "async": "^2.0.0",
-    "aws-sdk": "2.6.9",
+    "aws-sdk": "2.22.0",
     "invariant": "^2.2.1",
     "measured": "^1.1.0",
-    "warning": "^2.1.0"
+    "warning": "^3.0.0"
   },
   "devDependencies": {
+    "babel-eslint": "^7.2.3",
+    "eslint": "^3.19.0",
+    "eslint-plugin-babel": "^4.1.1",
+    "flow-bin": "^0.46.0",
+    "jest": "18.1.0"
   }
 }

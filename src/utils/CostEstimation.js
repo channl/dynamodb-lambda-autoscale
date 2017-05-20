@@ -1,5 +1,4 @@
 /* @flow */
-import invariant from 'invariant';
 import type { Throughput } from 'aws-sdk';
 
 export default class CostEstimation {
