@@ -2,90 +2,100 @@
 import Instrument from './logging/Instrument';
 import log from './logging/log';
 import invariant from 'invariant';
-import Provisioner from './Provisioner';
-import Stats from './utils/Stats';
 import CostEstimation from './utils/CostEstimation';
 import ThroughputUtils from './utils/ThroughputUtils';
-import CapacityCalculator from './CapacityCalculator';
-import type { UpdateTableRequest } from 'aws-sdk';
+import RateLimitedTableUpdater from './utils/RateLimitedTableUpdater';
+import type { UpdateTableRequest, UpdateTableResponse, DescribeTableRequest, DescribeTableResponse } from 'aws-sdk';
+import type { GetTableNamesAsyncFunc, GetTableConsumedCapacityAsyncFunc,
+  GetTableUpdateAsyncFunc } from './flow/FlowTypes';
 
 export default class DynamoDBAutoscaler {
-  _provisioner: Provisioner;
-  _capacityCalculator: CapacityCalculator;
+  _getTableNamesAsyncFunc: GetTableNamesAsyncFunc;
+  _getTableConsumedCapacityAsyncFunc: GetTableConsumedCapacityAsyncFunc;
+  _getTableUpdateAsyncFunc: GetTableUpdateAsyncFunc;
+  _describeTableAsync: (params: DescribeTableRequest) => Promise<DescribeTableResponse>;
+  _updateTableAsync: (params: UpdateTableRequest) => Promise<UpdateTableResponse>;
+  _rateLimitedTableUpdater: RateLimitedTableUpdater;
 
-  constructor() {
-    this._provisioner = new Provisioner();
-    this._capacityCalculator = new CapacityCalculator();
+  constructor(
+    getTableNamesAsyncFunc: GetTableNamesAsyncFunc,
+    getTableConsumedCapacityAsyncFunc: GetTableConsumedCapacityAsyncFunc,
+    getTableUpdateAsyncFunc: GetTableUpdateAsyncFunc,
+    describeTableAsync: (params: DescribeTableRequest) => Promise<DescribeTableResponse>,
+    updateTableAsync: (params: UpdateTableRequest) => Promise<UpdateTableResponse>) {
+    this._getTableNamesAsyncFunc = getTableNamesAsyncFunc;
+    this._getTableConsumedCapacityAsyncFunc = getTableConsumedCapacityAsyncFunc;
+    this._getTableUpdateAsyncFunc = getTableUpdateAsyncFunc;
+    this._describeTableAsync = describeTableAsync;
+    this._updateTableAsync = updateTableAsync;
+    this._rateLimitedTableUpdater = new RateLimitedTableUpdater(describeTableAsync, updateTableAsync);
   }
 
   // $FlowIgnore
   @Instrument.timer()
   async runAsync(): Promise<void> {
-    log('Getting table names');
-    let tableNames = await this._provisioner.getTableNamesAsync();
+    log('Getting names of tables to autoscale');
+    let tableNames = await this._getTableNamesAsyncFunc();
 
-    log('Getting table details');
-    let tableDetails = await this._getTableDetailsAsync(tableNames);
+    log(`Getting details of ${tableNames.length} tables`);
+    let tableDetails = await Promise.all(tableNames.map(async tableName => {
 
-    log('Getting required table update requests');
-    let tableUpdateRequests = this._getTableUpdateRequests(tableDetails);
+      log(`Getting '${tableName}' table description`);
+      let tableDescriptionResp = await this._describeTableAsync({TableName: tableName});
+      let tableDescription = tableDescriptionResp.Table;
 
-    if (tableUpdateRequests.length > 0) {
-      log('Updating tables');
-      await this._updateTablesAsync(tableUpdateRequests);
-      log('Updated tables');
-    } else {
+      log(`Getting '${tableName}' table consumed capacity description`);
+      let consumedCapacityTableDescription = await this._getTableConsumedCapacityAsyncFunc(tableDescription);
+
+      log(`Getting '${tableName}' table update request`);
+      let tableUpdateRequest = await this._getTableUpdateAsyncFunc(tableDescription, consumedCapacityTableDescription);
+
+      log(`Getting '${tableName}' table provisioned throughput`);
+      let totalTableProvisionedThroughput = ThroughputUtils.getTotalTableProvisionedThroughput(tableDescription);
+
+      log(`Getting '${tableName}' table estimated cost`);
+      let monthlyEstimatedCost = CostEstimation.getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
+
+      return {
+        tableName,
+        tableDescription,
+        consumedCapacityTableDescription,
+        tableUpdateRequest,
+        totalTableProvisionedThroughput,
+        monthlyEstimatedCost,
+      };
+    }));
+
+    let tableUpdateRequests = this._filterNulls(tableDetails.map(td => td.tableUpdateRequest));
+    if (tableUpdateRequests.length === 0) {
       log('No table updates required');
+      return;
     }
+
+    log('Updating tables');
+    await this._updateTablesAsync(tableUpdateRequests);
+    log('Updated tables');
   }
 
-  async _getTableDetailsAsync(tableNames: string[]): Promise<Object[]> {
-    invariant(tableNames instanceof Array, 'The argument \'tableNames\' was not an array');
-
-    let tasks = tableNames.map(name => this._getTableDetailAsync(name));
-    return await Promise.all(tasks);
+  _filterNulls<T>(items: Array<?T>): Array<T> {
+    invariant(items instanceof Array, 'The argument \'items\' was not an array');
+    let nonNullItems = items.filter(item => item != null);
+    return ((nonNullItems: any[]): T[]);
   }
 
-  async _getTableDetailAsync(tableName: string): Promise<Object> {
-    invariant(typeof tableName === 'string', 'The argument \'tableName\' was not a string');
+  async _updateTableAsync(tableUpdateRequest: UpdateTableRequest,
+    isRateLimitedUpdatingRequired: boolean): Promise<void> {
+    invariant(tableUpdateRequest != null, 'The argument \'tableUpdateRequest\' was null');
+    invariant(typeof isRateLimitedUpdatingRequired === 'boolean',
+      'The argument \'isRateLimitedUpdatingRequired\' was not a boolean');
 
-    log('Getting table description', tableName);
-    let describeTableResponse = await this._provisioner.db
-      .describeTableAsync({TableName: tableName});
-
-    let tableDescription = describeTableResponse.Table;
-
-    log('Getting table consumed capacity description', tableName);
-    let consumedCapacityTableDescription = await this._capacityCalculator
-      .describeTableConsumedCapacityAsync(tableDescription);
-
-    log('Getting table update request', tableName);
-    let tableUpdateRequest = await this._provisioner.getTableUpdateAsync(tableDescription,
-      consumedCapacityTableDescription);
-
-    // Log the monthlyEstimatedCost
-    let totalTableProvisionedThroughput = ThroughputUtils
-      .getTotalTableProvisionedThroughput(tableDescription);
-
-    let monthlyEstimatedCost = CostEstimation
-      .getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
-
-/*
-    stats
-      .counter('DynamoDB.monthlyEstimatedCost')
-      .inc(monthlyEstimatedCost);
-*/
-
-    let result = {
-      tableName,
-      tableDescription,
-      consumedCapacityTableDescription,
-      tableUpdateRequest,
-      totalTableProvisionedThroughput,
-      monthlyEstimatedCost,
-    };
-
-    return result;
+    log('Updating table', tableUpdateRequest.TableName);
+    if (isRateLimitedUpdatingRequired) {
+      await this._rateLimitedTableUpdater.updateTableAsync(tableUpdateRequest);
+    } else {
+      await this._updateTableAsync(tableUpdateRequest);
+    }
+    log('Updated table', tableUpdateRequest.TableName);
   }
 
   async _updateTablesAsync(tableUpdateRequests: UpdateTableRequest[]): Promise<void> {
@@ -99,28 +109,6 @@ export default class DynamoDBAutoscaler {
     await Promise.all(tableUpdateRequests.map(
       async req => this._updateTableAsync(req, isRateLimitedUpdatingRequired)
     ));
-  }
-
-  async _updateTableAsync(tableUpdateRequest: UpdateTableRequest,
-    isRateLimitedUpdatingRequired: boolean): Promise<void> {
-    invariant(tableUpdateRequest != null, 'The argument \'tableUpdateRequest\' was null');
-    invariant(typeof isRateLimitedUpdatingRequired === 'boolean',
-      'The argument \'isRateLimitedUpdatingRequired\' was not a boolean');
-
-    log('Updating table', tableUpdateRequest.TableName);
-    await this._provisioner.db
-      .updateTableWithRateLimitAsync(tableUpdateRequest, isRateLimitedUpdatingRequired);
-
-    log('Updated table', tableUpdateRequest.TableName);
-  }
-
-  _getTableUpdateRequests(tableDetails: Object[]): UpdateTableRequest[] {
-    invariant(tableDetails instanceof Array,
-      'The argument \'tableDetails\' was not an array');
-
-    return tableDetails
-      .filter(({tableUpdateRequest}) => { return tableUpdateRequest != null; })
-      .map(({tableUpdateRequest}) => tableUpdateRequest);
   }
 
   /*

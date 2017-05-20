@@ -10,7 +10,7 @@ export default class RateLimitedDecrement {
   static isDecrementAllowed(
     data: TableProvisionedAndConsumedThroughput,
     adjustmentContext: AdjustmentContext,
-    calcNewValueFunc: (data: TableProvisionedAndConsumedThroughput) => number) {
+    calcNewValueFunc: (adjustmentContext: AdjustmentContext) => number): boolean {
 
     invariant(data != null, 'Parameter \'data\' is not set');
     invariant(adjustmentContext != null, 'Parameter \'adjustmentContext\' is not set');
@@ -22,7 +22,7 @@ export default class RateLimitedDecrement {
     }
 
     let adjustment = Math.abs(adjustmentContext.ProvisionedValue) -
-      Math.abs(calcNewValueFunc(data));
+      Math.abs(calcNewValueFunc(adjustmentContext));
 
     if (adjustmentContext.CapacityAdjustmentConfig != null &&
       adjustmentContext.CapacityAdjustmentConfig.When.UnitAdjustmentGreaterThan != null &&
