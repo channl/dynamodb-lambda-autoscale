@@ -5,10 +5,4 @@ import DynamoDB from './aws/DynamoDB';
 import ConsumedThroughputCalculator from './ConsumedThroughputCalculator';
 import ProvisionedThroughtputCalculator from './ProvisionedThroughtputCalculator';
 
-export {
-  CloudWatch,
-  DynamoDB,
-  DynamoDBAutoscaler,
-  ConsumedThroughputCalculator,
-  ProvisionedThroughtputCalculator,
-};
+export { CloudWatch, DynamoDB, DynamoDBAutoscaler, ConsumedThroughputCalculator, ProvisionedThroughtputCalculator };

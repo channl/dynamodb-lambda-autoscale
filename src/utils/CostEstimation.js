@@ -2,7 +2,6 @@
 import type { Throughput } from 'aws-sdk';
 
 export default class CostEstimation {
-
   static getMonthlyEstimatedTableCost(provisionedThroughput: Throughput) {
     const averageHoursPerMonth = 720;
     const readCostPerHour = 0.0065;

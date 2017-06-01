@@ -9,7 +9,7 @@ class Metrics {
   }
 
   reset() {
-    for(let name in this.stats._metrics) {
+    for (let name in this.stats._metrics) {
       if ({}.hasOwnProperty.call(this.stats._metrics, name)) {
         let metric = this.stats._metrics[name];
         if (metric.unref) {
@@ -27,12 +27,10 @@ class Metrics {
 
   getSummaries() {
     let statsData = this.stats.toJSON();
-    let statsSummary = Object
-    .keys(statsData)
-    .map(name => {
+    let statsSummary = Object.keys(statsData).map(name => {
       let mean = this.to2Dec(statsData[name].histogram.mean);
       let count = statsData[name].meter.count;
-      return {name, mean, count};
+      return { name, mean, count };
     });
 
     statsSummary.sort((a, b) => {
@@ -46,11 +44,9 @@ class Metrics {
     });
 
     let nameLen = Math.max.apply(Math, statsSummary.map(i => i.name.length));
-    let statsAsStrings = statsSummary.map(s =>
-      this.padRight(s.name, nameLen + 2) +
-      this.padRight(s.mean + 'ms', 10) +
-      ' ' +
-      s.count);
+    let statsAsStrings = statsSummary.map(
+      s => this.padRight(s.name, nameLen + 2) + this.padRight(s.mean + 'ms', 10) + ' ' + s.count,
+    );
 
     return statsAsStrings;
   }

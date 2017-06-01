@@ -11,23 +11,25 @@ export default class RateLimitedTableUpdater {
 
   constructor(
     describeTableAsync: (params: DescribeTableRequest) => Promise<DescribeTableResponse>,
-    updateTableAsync: (params: UpdateTableRequest) => Promise<UpdateTableResponse>) {
-
-    invariant(describeTableAsync != null, 'Parameter \'describeTableAsync\' is not set');
-    invariant(updateTableAsync != null, 'Parameter \'updateTableAsync\' is not set');
+    updateTableAsync: (params: UpdateTableRequest) => Promise<UpdateTableResponse>,
+  ) {
+    invariant(describeTableAsync != null, 'Parameter describeTableAsync is not set');
+    invariant(updateTableAsync != null, 'Parameter updateTableAsync is not set');
     this._describeTableAsync = describeTableAsync;
     this._updateTableAsync = updateTableAsync;
-    this._updatePool = Async.queue(async (params: UpdateTableRequest,
-      callback: (result: UpdateTableResponse) => void) => {
-      let result = await this._updateTableAndWaitAsync(params);
-      callback(result);
-    }, 10);
+    this._updatePool = Async.queue(
+      async (params: UpdateTableRequest, callback: (result: UpdateTableResponse) => void) => {
+        let result = await this._updateTableAndWaitAsync(params);
+        callback(result);
+      },
+      10,
+    );
   }
 
   updateTableAsync(params: UpdateTableRequest): Promise<UpdateTableResponse> {
     return new Promise((resolve, reject) => {
       try {
-        invariant(params != null, 'Parameter \'params\' is not set');
+        invariant(params != null, 'Parameter params is not set');
         this._updatePool.push(params, resolve);
       } catch (ex) {
         reject(ex);

@@ -2,11 +2,10 @@
 import Metrics from '../metrics/Metrics';
 
 export default class Instrument {
-
   static timer() {
-    return function (target: Object, name: string, descriptor: any) {
+    return function(target: Object, name: string, descriptor: any) {
       let method = descriptor.value;
-      descriptor.value = function (...args) {
+      descriptor.value = function(...args) {
         let sw = Metrics.stats.timer(`${target.constructor.name}.${name}`).start();
         let promOrRes = null;
         try {

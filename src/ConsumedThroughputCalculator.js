@@ -7,15 +7,14 @@ import type { TableDescription, GetMetricStatisticsResponse, Dimension, GetMetri
 export default class ConsumedThroughputCalculator {
   _getMetricStatisticsAsync: (params: GetMetricStatisticsRequest) => Promise<GetMetricStatisticsResponse>;
 
-  constructor(
-    getMetricStatisticsAsync: (params: GetMetricStatisticsRequest) => Promise<GetMetricStatisticsResponse>) {
+  constructor(getMetricStatisticsAsync: (params: GetMetricStatisticsRequest) => Promise<GetMetricStatisticsResponse>) {
     this._getMetricStatisticsAsync = getMetricStatisticsAsync;
   }
 
   // $FlowIgnore
   @Instrument.timer()
   async describeTableConsumedCapacityAsync(params: TableDescription): Promise<TableConsumedCapacityDescription> {
-    invariant(params != null, 'Parameter \'params\' is not set');
+    invariant(params != null, 'Parameter params is not set');
 
     // Make all the requests concurrently
     let tableRead = this._getConsumedCapacityAsync(true, params.TableName, null);
@@ -54,17 +53,17 @@ export default class ConsumedThroughputCalculator {
       let throttledWrite = gsiThrottledWrites[i];
       let throttledRead = gsiThrottledReads[i];
       let gsiIndexName = read.globalSecondaryIndexName;
-      invariant(gsiIndexName != null, '\'gsiIndexName\' was null');
+      invariant(gsiIndexName != null, 'gsiIndexName was null');
       return {
         IndexName: gsiIndexName,
         ConsumedThroughput: {
           ReadCapacityUnits: read.value,
-          WriteCapacityUnits: write.value
+          WriteCapacityUnits: write.value,
         },
         ThrottledEvents: {
           ThrottledReadEvents: throttledRead,
-          ThrottledWriteEvents: throttledWrite
-        }
+          ThrottledWriteEvents: throttledWrite,
+        },
       };
     });
 
@@ -72,30 +71,32 @@ export default class ConsumedThroughputCalculator {
       TableName: params.TableName,
       ConsumedThroughput: {
         ReadCapacityUnits: tableConsumedRead.value,
-        WriteCapacityUnits: tableConsumedWrite.value
+        WriteCapacityUnits: tableConsumedWrite.value,
       },
       ThrottledEvents: {
         ThrottledReadEvents: tableThrottledRead,
-        ThrottledWriteEvents: tableThrottledWrite
+        ThrottledWriteEvents: tableThrottledWrite,
       },
-      GlobalSecondaryIndexes: gsis
+      GlobalSecondaryIndexes: gsis,
     };
   }
 
   async _getConsumedCapacityAsync(
-    isRead: boolean, tableName: string, globalSecondaryIndexName: ?string):
-    Promise<ConsumedCapacityDesc> {
-    invariant(isRead != null, 'Parameter \'isRead\' is not set');
-    invariant(tableName != null, 'Parameter \'tableName\' is not set');
+    isRead: boolean,
+    tableName: string,
+    globalSecondaryIndexName: ?string
+  ): Promise<ConsumedCapacityDesc> {
+    invariant(isRead != null, 'Parameter isRead is not set');
+    invariant(tableName != null, 'Parameter tableName is not set');
 
     let settings = this._getStatisticSettings();
 
     let EndTime = new Date();
     let StartTime = new Date();
-    StartTime.setTime(EndTime - (60000 * settings.spanMinutes * settings.count));
+    StartTime.setTime(EndTime - 60000 * settings.spanMinutes * settings.count);
     let MetricName = isRead ? 'ConsumedReadCapacityUnits' : 'ConsumedWriteCapacityUnits';
     let Dimensions = this._getDimensions(tableName, globalSecondaryIndexName);
-    let period = (settings.spanMinutes * 60);
+    let period = settings.spanMinutes * 60;
     let params = {
       Namespace: 'AWS/DynamoDB',
       MetricName,
@@ -103,8 +104,8 @@ export default class ConsumedThroughputCalculator {
       StartTime,
       EndTime,
       Period: period,
-      Statistics: [ settings.type ],
-      Unit: 'Count'
+      Statistics: [settings.type],
+      Unit: 'Count',
     };
 
     let statistics = await this._getMetricStatisticsAsync(params);
@@ -112,10 +113,10 @@ export default class ConsumedThroughputCalculator {
     let result: ConsumedCapacityDesc = {
       tableName,
       globalSecondaryIndexName,
-      value
+      value,
     };
 
-/*
+    /*
     log(JSON.stringify({
       ...result,
       statistics: statistics.Datapoints.map(dp => dp.Sum / (settings.spanMinutes * 60)),
@@ -126,19 +127,21 @@ export default class ConsumedThroughputCalculator {
   }
 
   async _getThrottledEventsAsync(
-    isRead: boolean, tableName: string, globalSecondaryIndexName: ?string):
-    Promise<number> {
-    invariant(isRead != null, 'Parameter \'isRead\' is not set');
-    invariant(tableName != null, 'Parameter \'tableName\' is not set');
+    isRead: boolean,
+    tableName: string,
+    globalSecondaryIndexName: ?string
+  ): Promise<number> {
+    invariant(isRead != null, 'Parameter isRead is not set');
+    invariant(tableName != null, 'Parameter tableName is not set');
 
     let settings = this._getThrottledEventStatisticSettings();
 
     let EndTime = new Date();
     let StartTime = new Date();
-    StartTime.setTime(EndTime - (60000 * settings.spanMinutes * settings.count));
+    StartTime.setTime(EndTime - 60000 * settings.spanMinutes * settings.count);
     let MetricName = isRead ? 'ReadThrottleEvents' : 'WriteThrottleEvents';
     let Dimensions = this._getDimensions(tableName, globalSecondaryIndexName);
-    let period = (settings.spanMinutes * 60);
+    let period = settings.spanMinutes * 60;
     let params = {
       Namespace: 'AWS/DynamoDB',
       MetricName,
@@ -146,8 +149,8 @@ export default class ConsumedThroughputCalculator {
       StartTime,
       EndTime,
       Period: period,
-      Statistics: [ settings.type ],
-      Unit: 'Count'
+      Statistics: [settings.type],
+      Unit: 'Count',
     };
 
     let statistics = await this._getMetricStatisticsAsync(params);
@@ -158,15 +161,15 @@ export default class ConsumedThroughputCalculator {
   _getDimensions(tableName: string, globalSecondaryIndexName: ?string): Dimension[] {
     if (globalSecondaryIndexName) {
       return [
-        { Name: 'TableName', Value: tableName},
-        { Name: 'GlobalSecondaryIndexName', Value: globalSecondaryIndexName}
+        { Name: 'TableName', Value: tableName },
+        { Name: 'GlobalSecondaryIndexName', Value: globalSecondaryIndexName },
       ];
     }
 
-    return [ { Name: 'TableName', Value: tableName} ];
+    return [{ Name: 'TableName', Value: tableName }];
   }
 
-    // Gets the settings used to fetch the consumed throughput statistics
+  // Gets the settings used to fetch the consumed throughput statistics
   _getStatisticSettings(): StatisticSettings {
     return {
       count: 5,
@@ -186,7 +189,7 @@ export default class ConsumedThroughputCalculator {
 
   // Gets the projected capacity value based on the cloudwatch datapoints
   _getProjectedValue(settings: StatisticSettings, data: GetMetricStatisticsResponse): number {
-    invariant(data != null, 'Parameter \'data\' is not set');
+    invariant(data != null, 'Parameter data is not set');
 
     if (data.Datapoints.length === 0) {
       return 0;

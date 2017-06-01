@@ -28,7 +28,7 @@ const printFileSizesAfterBuild = FileSizeReporter.printFileSizesAfterBuild;
 const useYarn = fs.existsSync(paths.yarnLockFile);
 
 // Warn and crash if required files are missing
-if (!checkRequiredFiles([ paths.appIndexJs ])) {
+if (!checkRequiredFiles([paths.appIndexJs])) {
   process.exit(1);
 }
 
@@ -61,13 +61,13 @@ function build(previousFileSizes) {
   try {
     compiler = webpack(config);
   } catch (err) {
-    printErrors('Failed to compile.', [ err ]);
+    printErrors('Failed to compile.', [err]);
     process.exit(1);
   }
 
   compiler.run((err, stats) => {
     if (err) {
-      printErrors('Failed to compile.', [ err ]);
+      printErrors('Failed to compile.', [err]);
       process.exit(1);
     }
 
@@ -77,8 +77,11 @@ function build(previousFileSizes) {
     }
 
     if (process.env.CI && stats.compilation.warnings.length) {
-      // eslint-disable-next-line max-len
-      printErrors('Failed to compile. When process.env.CI = true, warnings are treated as failures. Most CI servers set this automatically.', stats.compilation.warnings);
+      printErrors(
+        // eslint-disable-next-line max-len
+        'Failed to compile. When process.env.CI = true, warnings are treated as failures. Most CI servers set this automatically.',
+        stats.compilation.warnings
+      );
       process.exit(1);
     }
 
@@ -96,9 +99,7 @@ function build(previousFileSizes) {
     const publicPathname = url.parse(publicPath).pathname;
     if (publicUrl && publicUrl.indexOf('.github.io/') !== -1) {
       // "homepage": "http://user.github.io/project"
-      console.log(
-        `The project was built assuming it is hosted at ${chalk.green(publicPathname)}.`
-      );
+      console.log(`The project was built assuming it is hosted at ${chalk.green(publicPathname)}.`);
       console.log(
         `You can control this with the ${chalk.green('homepage')} field in your ${chalk.cyan('package.json')}.`
       );
@@ -114,19 +115,13 @@ function build(previousFileSizes) {
           console.log(`  ${chalk.cyan('npm')} install --save-dev gh-pages`);
         }
         console.log();
-        console.log(
-          `Add the following script in your ${chalk.cyan('package.json')}.`
-        );
+        console.log(`Add the following script in your ${chalk.cyan('package.json')}.`);
         console.log();
         console.log(`    ${chalk.dim('// ...')}`);
         console.log(`    ${chalk.yellow('"scripts"')}: {`);
         console.log(`      ${chalk.dim('// ...')}`);
-        console.log(
-          `      ${chalk.yellow('"predeploy"')}: ${chalk.yellow('"npm run build",')}`
-        );
-        console.log(
-          `      ${chalk.yellow('"deploy"')}: ${chalk.yellow('"gh-pages -d build"')}`
-        );
+        console.log(`      ${chalk.yellow('"predeploy"')}: ${chalk.yellow('"npm run build",')}`);
+        console.log(`      ${chalk.yellow('"deploy"')}: ${chalk.yellow('"gh-pages -d build"')}`);
         console.log('    }');
         console.log();
         console.log('Then run:');
@@ -136,9 +131,7 @@ function build(previousFileSizes) {
       console.log();
     } else if (publicPath !== '/') {
       // "homepage": "http://mywebsite.com/project"
-      console.log(
-        `The project was built assuming it is hosted at ${chalk.green(publicPath)}.`
-      );
+      console.log(`The project was built assuming it is hosted at ${chalk.green(publicPath)}.`);
       console.log(
         `You can control this with the ${chalk.green('homepage')} field in your ${chalk.cyan('package.json')}.`
       );
@@ -148,26 +141,22 @@ function build(previousFileSizes) {
     } else {
       if (publicUrl) {
         // "homepage": "http://mywebsite.com"
-        console.log(
-          `The project was built assuming it is hosted at ${chalk.green(publicUrl)}.`
-        );
+        console.log(`The project was built assuming it is hosted at ${chalk.green(publicUrl)}.`);
         console.log(
           `You can control this with the ${chalk.green('homepage')} field in your ${chalk.cyan('package.json')}.`
         );
         console.log();
       } else {
         // no homepage
-        console.log(
-          'The project was built assuming it is hosted at the server root.'
-        );
-        console.log(
-          `To override this, specify the ${chalk.green('homepage')} in your ${chalk.cyan('package.json')}.`
-        );
+        console.log('The project was built assuming it is hosted at the server root.');
+        console.log(`To override this, specify the ${chalk.green('homepage')} in your ${chalk.cyan('package.json')}.`);
         console.log('For example, add this to build it for GitHub Pages:');
         console.log();
 
-        // eslint-disable-next-line max-len
-        console.log(`  ${chalk.green('"homepage"')} ${chalk.cyan(':')} ${chalk.green('"http://myname.github.io/myapp"')}${chalk.cyan(',')}`);
+        console.log(
+          // eslint-disable-next-line max-len
+          `  ${chalk.green('"homepage"')} ${chalk.cyan(':')} ${chalk.green('"http://myname.github.io/myapp"')}${chalk.cyan(',')}`
+        );
         console.log();
       }
 

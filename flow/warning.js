@@ -1,4 +1,4 @@
 /* @flow */
 declare module 'warning' {
-  declare var exports: (shouldBeTrue: bool, warning: string) => void;
+  declare var exports: (shouldBeTrue: boolean, warning: string) => void;
 }

@@ -1,14 +1,17 @@
 /* @flow */
-import { it, expect } from 'jest';
 import DynamoDBAutoscaler from '../src/DynamoDBAutoscaler';
 import ConsumedThroughputCalculator from '../src/ConsumedThroughputCalculator';
 import ProvisionedThroughtputCalculator from '../src/ProvisionedThroughtputCalculator';
-import type { TableDescription, GetMetricStatisticsRequest, GetMetricStatisticsResponse,
-  DescribeTableRequest, UpdateTableRequest } from 'aws-sdk';
+import type {
+  TableDescription,
+  GetMetricStatisticsRequest,
+  GetMetricStatisticsResponse,
+  DescribeTableRequest,
+  UpdateTableRequest,
+} from 'aws-sdk';
 import type { TableConsumedCapacityDescription, ProvisionerConfig } from '../src/flow/FlowTypes';
 
-it('DynamoDBAutoscaler', async () => {
-
+test('DynamoDBAutoscaler', async () => {
   let tableDesc: TableDescription = {
     AttributeDefinitions: [],
     CreationDateTime: 0,
@@ -32,7 +35,7 @@ it('DynamoDBAutoscaler', async () => {
     TableArn: '',
     TableName: 'TestTable',
     TableSizeBytes: 0,
-    TableStatus: ''
+    TableStatus: '',
   };
 
   let consumedThroughput: GetMetricStatisticsResponse = {
@@ -42,21 +45,21 @@ it('DynamoDBAutoscaler', async () => {
   };
 
   let provisionerConfig: ProvisionerConfig = {
-    ReadCapacity: {
-    },
-    WriteCapacity: {
-    },
+    ReadCapacity: {},
+    WriteCapacity: {},
   };
 
-  // eslint-disable-next-line
-  let cc = new ConsumedThroughputCalculator(async (params: GetMetricStatisticsRequest) => {
-    return consumedThroughput;
-  });
+  let cc = new ConsumedThroughputCalculator(
+    // eslint-disable-next-line
+    async (params: GetMetricStatisticsRequest) => {
+      return consumedThroughput;
+    },
+  );
 
   let pr = new ProvisionedThroughtputCalculator();
 
   let getTableNamesAsyncFunc = async () => {
-    return [ tableDesc.TableName ];
+    return [tableDesc.TableName];
   };
 
   let getTableConsumedCapacityAsyncFunc = async (tableDescription: TableDescription) => {
@@ -64,7 +67,10 @@ it('DynamoDBAutoscaler', async () => {
   };
 
   // eslint-disable-next-line
-  let getTableUpdateAsyncFunc = async (tableDescription: TableDescription, tableConsumedCapacityDescription: TableConsumedCapacityDescription) => {
+  let getTableUpdateAsyncFunc = async (
+    tableDescription: TableDescription,
+    tableConsumedCapacityDescription: TableConsumedCapacityDescription,
+  ) => {
     return await pr.getTableUpdateAsync(tableDescription, tableConsumedCapacityDescription, provisionerConfig);
   };
 
@@ -79,11 +85,12 @@ it('DynamoDBAutoscaler', async () => {
   };
 
   let autoscaler = new DynamoDBAutoscaler(
-      getTableNamesAsyncFunc,
-      getTableConsumedCapacityAsyncFunc,
-      getTableUpdateAsyncFunc,
-      describeTableAsync,
-      updateTableAsync);
+    getTableNamesAsyncFunc,
+    getTableConsumedCapacityAsyncFunc,
+    getTableUpdateAsyncFunc,
+    describeTableAsync,
+    updateTableAsync,
+  );
 
   expect(autoscaler != null).toEqual(true);
 });

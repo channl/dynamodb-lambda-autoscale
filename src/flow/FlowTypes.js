@@ -3,12 +3,14 @@ import type { ProvisionedThroughput, Throughput, UpdateTableRequest, TableDescri
 
 export type GetTableNamesAsyncFunc = () => Promise<string[]>;
 
-export type GetTableConsumedCapacityAsyncFunc =
-  (tableDescription: TableDescription) => Promise<TableConsumedCapacityDescription>;
+export type GetTableConsumedCapacityAsyncFunc = (
+  tableDescription: TableDescription,
+) => Promise<TableConsumedCapacityDescription>;
 
-export type GetTableUpdateAsyncFunc =
-  (tableDescription: TableDescription, tableConsumedCapacityDescription: TableConsumedCapacityDescription)
-    => Promise<?UpdateTableRequest>;
+export type GetTableUpdateAsyncFunc = (
+  tableDescription: TableDescription,
+  tableConsumedCapacityDescription: TableConsumedCapacityDescription,
+) => Promise<?UpdateTableRequest>;
 
 export type TableDetails = {
   tableName: string,
@@ -21,7 +23,7 @@ export type TableDetails = {
 
 export type ThrottledEventsDescription = {
   ThrottledReadEvents: number,
-  ThrottledWriteEvents: number
+  ThrottledWriteEvents: number,
 };
 
 export type TableProvisionedAndConsumedThroughput = {
@@ -29,7 +31,7 @@ export type TableProvisionedAndConsumedThroughput = {
   IndexName?: string,
   ProvisionedThroughput: ProvisionedThroughput,
   ConsumedThroughput: Throughput,
-  ThrottledEvents: ThrottledEventsDescription
+  ThrottledEvents: ThrottledEventsDescription,
 };
 
 export type GlobalSecondaryIndexConsumedThroughput = {
@@ -113,5 +115,5 @@ export type AdjustmentData = {
   isAfterLastDecreaseGracePeriod: boolean,
   isAfterLastIncreaseGracePeriod: boolean,
   isAdjustmentWanted: boolean,
-  isAdjustmentAllowed: boolean
+  isAdjustmentAllowed: boolean,
 };

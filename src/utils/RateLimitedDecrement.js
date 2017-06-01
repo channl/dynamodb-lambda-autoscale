@@ -1,34 +1,30 @@
 /* @flow */
 import invariant from 'invariant';
-import type {
-  TableProvisionedAndConsumedThroughput,
-  AdjustmentContext
-} from '../flow/FlowTypes';
+import type { TableProvisionedAndConsumedThroughput, AdjustmentContext } from '../flow/FlowTypes';
 
 export default class RateLimitedDecrement {
-
   static isDecrementAllowed(
     data: TableProvisionedAndConsumedThroughput,
     adjustmentContext: AdjustmentContext,
-    calcNewValueFunc: (adjustmentContext: AdjustmentContext) => number): boolean {
-
-    invariant(data != null, 'Parameter \'data\' is not set');
-    invariant(adjustmentContext != null, 'Parameter \'adjustmentContext\' is not set');
-    invariant(calcNewValueFunc != null, 'Parameter \'calcNewValueFunc\' is not set');
+    calcNewValueFunc: (adjustmentContext: AdjustmentContext) => number,
+  ): boolean {
+    invariant(data != null, 'Parameter data is not set');
+    invariant(adjustmentContext != null, 'Parameter adjustmentContext is not set');
+    invariant(calcNewValueFunc != null, 'Parameter calcNewValueFunc is not set');
 
     if (this.getNextAllowedDecrementDate(data, adjustmentContext) > this.getNowDate()) {
       // Disallow if we havent crossed one of four time barriers
       return false;
     }
 
-    let adjustment = Math.abs(adjustmentContext.ProvisionedValue) -
-      Math.abs(calcNewValueFunc(adjustmentContext));
+    let adjustment = Math.abs(adjustmentContext.ProvisionedValue) - Math.abs(calcNewValueFunc(adjustmentContext));
 
-    if (adjustmentContext.CapacityAdjustmentConfig != null &&
+    if (
+      adjustmentContext.CapacityAdjustmentConfig != null &&
       adjustmentContext.CapacityAdjustmentConfig.When.UnitAdjustmentGreaterThan != null &&
       adjustment <= adjustmentContext.CapacityAdjustmentConfig.When.UnitAdjustmentGreaterThan &&
-      this.getNowDate().valueOf() <
-      this.getLastAllowedDecrementDate().valueOf()) {
+      this.getNowDate().valueOf() < this.getLastAllowedDecrementDate().valueOf()
+    ) {
       // Disallow if the adjustment is very small.
       // However, if we have crossed the last time
       // barrier of the day then we might as well allow it.
@@ -40,8 +36,8 @@ export default class RateLimitedDecrement {
 
   static getNextAllowedDecrementDate(
     data: TableProvisionedAndConsumedThroughput,
-    adjustmentContext: AdjustmentContext) {
-
+    adjustmentContext: AdjustmentContext,
+  ) {
     // Check if we have already had all the decreases we are allowed today
     if (data.ProvisionedThroughput.NumberOfDecreasesToday >= 4) {
       return this.getTomorrowDate();
@@ -61,22 +57,25 @@ export default class RateLimitedDecrement {
     // Handle grace periods
     let withIncrementGracePeriod = this.parseDate(data.ProvisionedThroughput.LastIncreaseDateTime);
 
-    if (adjustmentContext.CapacityAdjustmentConfig != null &&
-      adjustmentContext.CapacityAdjustmentConfig.When.AfterLastIncrementMinutes != null) {
+    if (
+      adjustmentContext.CapacityAdjustmentConfig != null &&
+      adjustmentContext.CapacityAdjustmentConfig.When.AfterLastIncrementMinutes != null
+    ) {
       let incMins = adjustmentContext.CapacityAdjustmentConfig.When.AfterLastIncrementMinutes;
       withIncrementGracePeriod.setMinutes(withIncrementGracePeriod.getMinutes() + incMins);
     }
 
     let withDecrementGracePeriod = this.parseDate(data.ProvisionedThroughput.LastDecreaseDateTime);
 
-    if (adjustmentContext.CapacityAdjustmentConfig != null &&
-      adjustmentContext.CapacityAdjustmentConfig.When.AfterLastDecrementMinutes != null) {
+    if (
+      adjustmentContext.CapacityAdjustmentConfig != null &&
+      adjustmentContext.CapacityAdjustmentConfig.When.AfterLastDecrementMinutes != null
+    ) {
       let decMins = adjustmentContext.CapacityAdjustmentConfig.When.AfterLastDecrementMinutes;
       withDecrementGracePeriod.setMinutes(withDecrementGracePeriod.getMinutes() + decMins);
     }
 
-    let result = new Date(Math.max(
-      nextDecrementDate, withIncrementGracePeriod, withDecrementGracePeriod));
+    let result = new Date(Math.max(nextDecrementDate, withIncrementGracePeriod, withDecrementGracePeriod));
 
     return result;
   }

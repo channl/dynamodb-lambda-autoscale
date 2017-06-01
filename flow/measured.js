@@ -1,25 +1,25 @@
 /* @flow */
 declare module 'measured' {
   declare class MeasuredCollection {
-    _metrics: any;
+    _metrics: any,
 
-    timer(name: string): MeasuredTimer;
+    timer(name: string): MeasuredTimer,
 
-    counter(name: string): MeasuredCounter;
+    counter(name: string): MeasuredCounter,
 
-    toJSON(): any;
+    toJSON(): any,
   }
 
   declare class MeasuredTimer {
-    start(): Stopwatch;
+    start(): Stopwatch,
   }
 
   declare class MeasuredCounter {
-    inc(value: number): void;
+    inc(value: number): void,
   }
 
   declare class Stopwatch {
-    end(): void;
+    end(): void,
   }
 
   declare function createCollection(): MeasuredCollection;

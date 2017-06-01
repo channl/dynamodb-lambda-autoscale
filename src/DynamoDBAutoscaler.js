@@ -6,8 +6,11 @@ import CostEstimation from './utils/CostEstimation';
 import ThroughputUtils from './utils/ThroughputUtils';
 import RateLimitedTableUpdater from './utils/RateLimitedTableUpdater';
 import type { UpdateTableRequest, UpdateTableResponse, DescribeTableRequest, DescribeTableResponse } from 'aws-sdk';
-import type { GetTableNamesAsyncFunc, GetTableConsumedCapacityAsyncFunc,
-  GetTableUpdateAsyncFunc } from './flow/FlowTypes';
+import type {
+  GetTableNamesAsyncFunc,
+  GetTableConsumedCapacityAsyncFunc,
+  GetTableUpdateAsyncFunc,
+} from './flow/FlowTypes';
 
 export default class DynamoDBAutoscaler {
   _getTableNamesAsyncFunc: GetTableNamesAsyncFunc;
@@ -22,7 +25,8 @@ export default class DynamoDBAutoscaler {
     getTableConsumedCapacityAsyncFunc: GetTableConsumedCapacityAsyncFunc,
     getTableUpdateAsyncFunc: GetTableUpdateAsyncFunc,
     describeTableAsync: (params: DescribeTableRequest) => Promise<DescribeTableResponse>,
-    updateTableAsync: (params: UpdateTableRequest) => Promise<UpdateTableResponse>) {
+    updateTableAsync: (params: UpdateTableRequest) => Promise<UpdateTableResponse>
+  ) {
     this._getTableNamesAsyncFunc = getTableNamesAsyncFunc;
     this._getTableConsumedCapacityAsyncFunc = getTableConsumedCapacityAsyncFunc;
     this._getTableUpdateAsyncFunc = getTableUpdateAsyncFunc;
@@ -38,33 +42,37 @@ export default class DynamoDBAutoscaler {
     let tableNames = await this._getTableNamesAsyncFunc();
 
     log(`Getting details of ${tableNames.length} tables`);
-    let tableDetails = await Promise.all(tableNames.map(async tableName => {
+    let tableDetails = await Promise.all(
+      tableNames.map(async tableName => {
+        log(`Getting '${tableName}' table description`);
+        let tableDescriptionResp = await this._describeTableAsync({ TableName: tableName });
+        let tableDescription = tableDescriptionResp.Table;
 
-      log(`Getting '${tableName}' table description`);
-      let tableDescriptionResp = await this._describeTableAsync({TableName: tableName});
-      let tableDescription = tableDescriptionResp.Table;
+        log(`Getting '${tableName}' table consumed capacity description`);
+        let consumedCapacityTableDescription = await this._getTableConsumedCapacityAsyncFunc(tableDescription);
 
-      log(`Getting '${tableName}' table consumed capacity description`);
-      let consumedCapacityTableDescription = await this._getTableConsumedCapacityAsyncFunc(tableDescription);
+        log(`Getting '${tableName}' table update request`);
+        let tableUpdateRequest = await this._getTableUpdateAsyncFunc(
+          tableDescription,
+          consumedCapacityTableDescription
+        );
 
-      log(`Getting '${tableName}' table update request`);
-      let tableUpdateRequest = await this._getTableUpdateAsyncFunc(tableDescription, consumedCapacityTableDescription);
+        log(`Getting '${tableName}' table provisioned throughput`);
+        let totalTableProvisionedThroughput = ThroughputUtils.getTotalTableProvisionedThroughput(tableDescription);
 
-      log(`Getting '${tableName}' table provisioned throughput`);
-      let totalTableProvisionedThroughput = ThroughputUtils.getTotalTableProvisionedThroughput(tableDescription);
+        log(`Getting '${tableName}' table estimated cost`);
+        let monthlyEstimatedCost = CostEstimation.getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
 
-      log(`Getting '${tableName}' table estimated cost`);
-      let monthlyEstimatedCost = CostEstimation.getMonthlyEstimatedTableCost(totalTableProvisionedThroughput);
-
-      return {
-        tableName,
-        tableDescription,
-        consumedCapacityTableDescription,
-        tableUpdateRequest,
-        totalTableProvisionedThroughput,
-        monthlyEstimatedCost,
-      };
-    }));
+        return {
+          tableName,
+          tableDescription,
+          consumedCapacityTableDescription,
+          tableUpdateRequest,
+          totalTableProvisionedThroughput,
+          monthlyEstimatedCost,
+        };
+      })
+    );
 
     let tableUpdateRequests = this._filterNulls(tableDetails.map(td => td.tableUpdateRequest));
     if (tableUpdateRequests.length === 0) {
@@ -78,23 +86,26 @@ export default class DynamoDBAutoscaler {
   }
 
   async _updateTablesAsync(tableUpdateRequests: UpdateTableRequest[]): Promise<void> {
-    invariant(tableUpdateRequests instanceof Array,
-      'The argument \'tableUpdateRequests\' was not an array');
+    invariant(tableUpdateRequests instanceof Array, 'The argument tableUpdateRequests was not an array');
 
     // If we are updating more than 10 tables in a single run
     // then we must wait until each one has been completed to
     // ensure we do not hit the AWS limit of 10 concurrent updates
     let isRateLimitedUpdatingRequired = tableUpdateRequests.length > 10;
-    await Promise.all(tableUpdateRequests.map(
-      async req => this._updateTableInternalAsync(req, isRateLimitedUpdatingRequired)
-    ));
+    await Promise.all(
+      tableUpdateRequests.map(async req => this._updateTableInternalAsync(req, isRateLimitedUpdatingRequired))
+    );
   }
 
-  async _updateTableInternalAsync(tableUpdateRequest: UpdateTableRequest,
-    isRateLimitedUpdatingRequired: boolean): Promise<void> {
-    invariant(tableUpdateRequest != null, 'The argument \'tableUpdateRequest\' was null');
-    invariant(typeof isRateLimitedUpdatingRequired === 'boolean',
-      'The argument \'isRateLimitedUpdatingRequired\' was not a boolean');
+  async _updateTableInternalAsync(
+    tableUpdateRequest: UpdateTableRequest,
+    isRateLimitedUpdatingRequired: boolean
+  ): Promise<void> {
+    invariant(tableUpdateRequest != null, 'The argument tableUpdateRequest was null');
+    invariant(
+      typeof isRateLimitedUpdatingRequired === 'boolean',
+      'The argument isRateLimitedUpdatingRequired was not a boolean'
+    );
 
     log(`Updating table '${tableUpdateRequest.TableName}'`);
     if (isRateLimitedUpdatingRequired) {
@@ -166,7 +177,7 @@ export default class DynamoDBAutoscaler {
   */
 
   _filterNulls<T>(items: Array<?T>): Array<T> {
-    invariant(items instanceof Array, 'The argument \'items\' was not an array');
+    invariant(items instanceof Array, 'The argument items was not an array');
     let nonNullItems = items.filter(item => item != null);
     return ((nonNullItems: any[]): T[]);
   }

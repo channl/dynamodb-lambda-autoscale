@@ -1,53 +1,80 @@
 /* @flow */
 declare module 'aws-sdk' {
-
   // DynamoDB
   declare class DynamoDB {
-    constructor(dynamoDBConfig: DynamoDBConfig): void;
+    constructor(dynamoDBConfig: DynamoDBConfig): void,
 
-    listTables(params: ?ListTablesRequest, callback: ?(err: ?Error,
-      data: ListTablesResponse) => void): PromiseRequest<ListTablesResponse>;
+    listTables(
+      params: ?ListTablesRequest,
+      callback: ?(err: ?Error, data: ListTablesResponse) => void,
+    ): PromiseRequest<ListTablesResponse>,
 
-    deleteTable(params: ?DeleteTableRequest,callback: ?(err: ?Error,
-      data: DeleteTableResponse) => void): PromiseRequest<DeleteTableResponse>;
+    deleteTable(
+      params: ?DeleteTableRequest,
+      callback: ?(err: ?Error, data: DeleteTableResponse) => void,
+    ): PromiseRequest<DeleteTableResponse>,
 
-    createTable(params: ?CreateTableRequest, callback: ?(err: ?Error,
-      data: CreateTableResponse) => void): PromiseRequest<CreateTableResponse>;
+    createTable(
+      params: ?CreateTableRequest,
+      callback: ?(err: ?Error, data: CreateTableResponse) => void,
+    ): PromiseRequest<CreateTableResponse>,
 
-    describeTable(params: ?DescribeTableRequest, callback: ?(err: ?Error,
-      data: DescribeTableResponse) => void): PromiseRequest<DescribeTableResponse>;
+    describeTable(
+      params: ?DescribeTableRequest,
+      callback: ?(err: ?Error, data: DescribeTableResponse) => void,
+    ): PromiseRequest<DescribeTableResponse>,
 
-    updateTable(params: ?UpdateTableRequest, callback: ?(err: ?Error,
-      data: UpdateTableResponse) => void): PromiseRequest<UpdateTableResponse>;
+    updateTable(
+      params: ?UpdateTableRequest,
+      callback: ?(err: ?Error, data: UpdateTableResponse) => void,
+    ): PromiseRequest<UpdateTableResponse>,
 
-    scan(params: ?ScanRequest, callback: ?(err: ?Error,
-      data: ScanQueryResponse) => void): PromiseRequest<ScanQueryResponse>;
+    scan(
+      params: ?ScanRequest,
+      callback: ?(err: ?Error, data: ScanQueryResponse) => void,
+    ): PromiseRequest<ScanQueryResponse>,
 
-    query(params: ?QueryRequest, callback: ?(err: ?Error,
-      data: ScanQueryResponse) => void): PromiseRequest<ScanQueryResponse>;
+    query(
+      params: ?QueryRequest,
+      callback: ?(err: ?Error, data: ScanQueryResponse) => void,
+    ): PromiseRequest<ScanQueryResponse>,
 
-    putItem(params: ?PutItemRequest, callback: ?(err: ?Error,
-      data: PutItemResponse) => void): PromiseRequest<PutItemResponse>;
+    putItem(
+      params: ?PutItemRequest,
+      callback: ?(err: ?Error, data: PutItemResponse) => void,
+    ): PromiseRequest<PutItemResponse>,
 
-    getItem(params: ?GetItemRequest, callback: ?(err: ?Error,
-      data: GetItemResponse) => void): PromiseRequest<GetItemResponse>;
+    getItem(
+      params: ?GetItemRequest,
+      callback: ?(err: ?Error, data: GetItemResponse) => void,
+    ): PromiseRequest<GetItemResponse>,
 
-    batchGetItem(params: ?BatchGetItemRequest, callback: ?(err: ?Error,
-      data: BatchGetItemResponse) => void): PromiseRequest<BatchGetItemResponse>;
+    batchGetItem(
+      params: ?BatchGetItemRequest,
+      callback: ?(err: ?Error, data: BatchGetItemResponse) => void,
+    ): PromiseRequest<BatchGetItemResponse>,
 
-    batchWriteItem(params: ?BatchWriteItemRequest, callback: ?(err: ?Error,
-      data: BatchWriteItemResponse) => void): PromiseRequest<BatchWriteItemResponse>;
+    batchWriteItem(
+      params: ?BatchWriteItemRequest,
+      callback: ?(err: ?Error, data: BatchWriteItemResponse) => void,
+    ): PromiseRequest<BatchWriteItemResponse>,
 
-    deleteItem(params: ?DeleteItemRequest, callback: ?(err: ?Error,
-      data: DeleteItemResponse) => void): PromiseRequest<DeleteItemResponse>;
+    deleteItem(
+      params: ?DeleteItemRequest,
+      callback: ?(err: ?Error, data: DeleteItemResponse) => void,
+    ): PromiseRequest<DeleteItemResponse>,
 
-    updateItem(params: ?UpdateItemRequest, callback: ?(err: ?Error,
-      data: UpdateItemResponse) => void): PromiseRequest<UpdateItemResponse>;
+    updateItem(
+      params: ?UpdateItemRequest,
+      callback: ?(err: ?Error, data: UpdateItemResponse) => void,
+    ): PromiseRequest<UpdateItemResponse>,
   }
 
   declare class CloudWatch {
-    getMetricStatistics(params: ?GetMetricStatisticsRequest, callback: ?(err: ?Error,
-      data: GetMetricStatisticsResponse) => void): PromiseRequest<GetMetricStatisticsResponse>;
+    getMetricStatistics(
+      params: ?GetMetricStatisticsRequest,
+      callback: ?(err: ?Error, data: GetMetricStatisticsResponse) => void,
+    ): PromiseRequest<GetMetricStatisticsResponse>,
   }
 
   declare type DynamoDBConfig = {
@@ -58,17 +85,17 @@ declare module 'aws-sdk' {
   };
 
   declare type ListTablesRequest = {
-     ExclusiveStartTableName?: string,
-     Limit?: number
+    ExclusiveStartTableName?: string,
+    Limit?: number,
   };
 
   declare type ListTablesResponse = {
-     LastEvaluatedTableName?: string,
-     TableNames: string[]
+    LastEvaluatedTableName?: string,
+    TableNames: string[],
   };
 
   declare type DeleteTableRequest = {
-     TableName: string,
+    TableName: string,
   };
 
   declare type DeleteTableResponse = {
@@ -97,7 +124,7 @@ declare module 'aws-sdk' {
     Segment?: number,
     Select?: string,
     TableName: string,
-    TotalSegments?: number
+    TotalSegments?: number,
   };
 
   declare type ScanQueryResponse = {
@@ -175,11 +202,11 @@ declare module 'aws-sdk' {
 
   declare type BatchDeleteRequest = {
     Key: AttributeMap,
-  }
+  };
 
   declare type BatchPutRequest = {
     Item: AttributeMap,
-  }
+  };
 
   declare type BatchWriteItemRequest = {
     RequestItems: BatchWriteRequestItems,
@@ -233,7 +260,7 @@ declare module 'aws-sdk' {
   };
 
   declare type DescribeTableRequest = {
-     TableName: string,
+    TableName: string,
   };
 
   declare type DescribeTableResponse = {
@@ -241,11 +268,11 @@ declare module 'aws-sdk' {
   };
 
   declare type UpdateTableRequest = {
-     AttributeDefinitions?: AttributeDefinition[],
-     GlobalSecondaryIndexUpdates? : GlobalSecondaryIndexUpdate[],
-     ProvisionedThroughput?: Throughput,
-     StreamSpecification?: StreamSpecification,
-     TableName: string
+    AttributeDefinitions?: AttributeDefinition[],
+    GlobalSecondaryIndexUpdates?: GlobalSecondaryIndexUpdate[],
+    ProvisionedThroughput?: Throughput,
+    StreamSpecification?: StreamSpecification,
+    TableName: string,
   };
 
   declare type UpdateTableResponse = {
@@ -259,11 +286,11 @@ declare module 'aws-sdk' {
     GlobalSecondaryIndexes?: GlobalSecondaryIndexDefinition[],
     LocalSecondaryIndexes?: LocalSecondaryIndexDefinition[],
     ProvisionedThroughput: Throughput,
-    StreamSpecification?: StreamSpecification
+    StreamSpecification?: StreamSpecification,
   };
 
   declare type ConsumedCapacityValue = {
-     CapacityUnits: number,
+    CapacityUnits: number,
   };
 
   declare type ConsumedCapacity = {
@@ -271,7 +298,7 @@ declare module 'aws-sdk' {
     GlobalSecondaryIndexes: ConsumedCapacityMap,
     LocalSecondaryIndexes: ConsumedCapacityMap,
     Table: ConsumedCapacityValue,
-    TableName: string
+    TableName: string,
   };
 
   declare type ConsumedCapacityMap = {
@@ -281,7 +308,7 @@ declare module 'aws-sdk' {
   declare type ItemCollectionMetric = {
     ItemCollectionKey: AttributeMap,
     SizeEstimateRangeGB: number[],
-  }
+  };
 
   declare type AttributeMap = {
     [keyName: string]: AttributeValue,
@@ -311,7 +338,7 @@ declare module 'aws-sdk' {
   };
 
   declare type BatchGetRequestItems = {
-    [keyName: string]: BatchGetRequestItem;
+    [keyName: string]: BatchGetRequestItem,
   };
 
   declare type BatchGetRequestItem = {
@@ -374,11 +401,11 @@ declare module 'aws-sdk' {
   };
 
   declare type ProvisionedThroughput = {
-     LastDecreaseDateTime: string,
-     LastIncreaseDateTime: string,
-     NumberOfDecreasesToday: number,
-     ReadCapacityUnits: number,
-     WriteCapacityUnits: number,
+    LastDecreaseDateTime: string,
+    LastIncreaseDateTime: string,
+    NumberOfDecreasesToday: number,
+    ReadCapacityUnits: number,
+    WriteCapacityUnits: number,
   };
 
   declare type Throughput = {
@@ -399,17 +426,17 @@ declare module 'aws-sdk' {
   };
 
   declare type LocalSecondaryIndex = {
-     IndexArn: string,
-     IndexName: string,
-     IndexSizeBytes: number,
-     ItemCount: number,
-     KeySchema: KeySchema,
-     Projection: Projection,
+    IndexArn: string,
+    IndexName: string,
+    IndexSizeBytes: number,
+    ItemCount: number,
+    KeySchema: KeySchema,
+    Projection: Projection,
   };
 
   declare type StreamSpecification = {
-     StreamEnabled: boolean,
-     StreamViewType: string,
+    StreamEnabled: boolean,
+    StreamViewType: string,
   };
 
   declare type TableDescription = {
@@ -426,7 +453,7 @@ declare module 'aws-sdk' {
     TableArn: string,
     TableName: string,
     TableSizeBytes: number,
-    TableStatus: string
+    TableStatus: string,
   };
 
   declare type GlobalSecondaryIndexUpdateCreate = {
@@ -446,17 +473,19 @@ declare module 'aws-sdk' {
   };
 
   declare type GlobalSecondaryIndexUpdate = {
-     Create?: GlobalSecondaryIndexUpdateCreate,
-     Delete?: GlobalSecondaryIndexUpdateDelete,
-     Update?: GlobalSecondaryIndexUpdateUpdate,
+    Create?: GlobalSecondaryIndexUpdateCreate,
+    Delete?: GlobalSecondaryIndexUpdateDelete,
+    Update?: GlobalSecondaryIndexUpdateUpdate,
   };
 
   // CloudWatch
   declare class CloudWatch {
-    constructor(cloudWatchOptions: CloudWatchOptions): void;
+    constructor(cloudWatchOptions: CloudWatchOptions): void,
 
-    getMetricStatistics(params: ?GetMetricStatisticsRequest, callback: ?(err: ?Error,
-      data: GetMetricStatisticsResponse) => void): PromiseRequest<GetMetricStatisticsResponse>;
+    getMetricStatistics(
+      params: ?GetMetricStatisticsRequest,
+      callback: ?(err: ?Error, data: GetMetricStatisticsResponse) => void,
+    ): PromiseRequest<GetMetricStatisticsResponse>,
   }
 
   declare type CloudWatchOptions = {
@@ -500,7 +529,7 @@ declare module 'aws-sdk' {
 
   // General
   declare class PromiseRequest<T> {
-    promise(): Promise<T>;
+    promise(): Promise<T>,
   }
 
   declare type Map<TKey, TValue> = {

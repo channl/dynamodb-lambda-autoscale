@@ -30,7 +30,7 @@ module.exports = {
   // You can exclude the *.map files from the build during deployment.
   devtool: 'source-map',
   // In production, we only want to load the polyfills and the app code.
-  entry: [ require.resolve('./polyfills'), paths.appIndexJs ],
+  entry: [require.resolve('./polyfills'), paths.appIndexJs],
   output: {
     // The build folder.
     path: paths.appBuild,
@@ -46,11 +46,11 @@ module.exports = {
     // We read `NODE_PATH` environment variable in `paths.js` and pass paths here.
     // We placed these paths second because we want `node_modules` to "win"
     // if there are any conflicts. This matches Node resolution mechanism.
-    modules: [ 'node_modules', paths.appNodeModules ].concat(paths.nodePaths),
+    modules: ['node_modules', paths.appNodeModules].concat(paths.nodePaths),
     // These are the reasonable defaults supported by the Node ecosystem.
     // We also include JSX as a common component filename extension to support
     // some tools, although we do not recommend using it, see:
-    extensions: [ '.js', '.json' ],
+    extensions: ['.js', '.json'],
     alias: {},
   },
   module: {
@@ -78,9 +78,7 @@ module.exports = {
       // Process JS with Babel.
       {
         test: /\.(js)$/,
-        include: [
-          paths.appSrc,
-        ],
+        include: [paths.appSrc],
         loader: 'babel-loader',
       },
       // ** STOP ** Are you adding a new loader?

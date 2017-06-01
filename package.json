@@ -20,7 +20,7 @@
     "flowcheck": "flow check",
     "flowcoverage": "flow coverage",
     "build": "node scripts/build.js",
-    "test": "node scripts/test.js --env=jsdom"
+    "test": "node scripts/test.js --env=node"
   },
   "dependencies": {
     "async": "^2.4.1",

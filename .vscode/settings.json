@@ -1,5 +1,20 @@
 // Place your settings in this file to overwrite default and user settings.
 {
     "javascript.validate.enable": false,
-    "flow.useNPMPackagedFlow": false
+    "flow.useNPMPackagedFlow": false,
+    "editor.rulers": [
+        120
+    ],
+    "files.exclude": {
+        "**/.git": true,
+        "**/node_modules": true,
+        "**/build": true
+    },
+    /*"prettier.parser": "flow",*/
+    "prettier.bracketSpacing": true,
+    "prettier.printWidth": 120,
+    "prettier.singleQuote": true,
+    "prettier.trailingComma": "es5",
+    "prettier.semi": true,
+    "editor.formatOnSave": true
 }
