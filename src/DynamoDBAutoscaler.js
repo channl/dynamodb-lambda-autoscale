@@ -77,27 +77,6 @@ export default class DynamoDBAutoscaler {
     log('Updated tables');
   }
 
-  _filterNulls<T>(items: Array<?T>): Array<T> {
-    invariant(items instanceof Array, 'The argument \'items\' was not an array');
-    let nonNullItems = items.filter(item => item != null);
-    return ((nonNullItems: any[]): T[]);
-  }
-
-  async _updateTableAsync(tableUpdateRequest: UpdateTableRequest,
-    isRateLimitedUpdatingRequired: boolean): Promise<void> {
-    invariant(tableUpdateRequest != null, 'The argument \'tableUpdateRequest\' was null');
-    invariant(typeof isRateLimitedUpdatingRequired === 'boolean',
-      'The argument \'isRateLimitedUpdatingRequired\' was not a boolean');
-
-    log('Updating table', tableUpdateRequest.TableName);
-    if (isRateLimitedUpdatingRequired) {
-      await this._rateLimitedTableUpdater.updateTableAsync(tableUpdateRequest);
-    } else {
-      await this._updateTableAsync(tableUpdateRequest);
-    }
-    log('Updated table', tableUpdateRequest.TableName);
-  }
-
   async _updateTablesAsync(tableUpdateRequests: UpdateTableRequest[]): Promise<void> {
     invariant(tableUpdateRequests instanceof Array,
       'The argument \'tableUpdateRequests\' was not an array');
@@ -107,10 +86,24 @@ export default class DynamoDBAutoscaler {
     // ensure we do not hit the AWS limit of 10 concurrent updates
     let isRateLimitedUpdatingRequired = tableUpdateRequests.length > 10;
     await Promise.all(tableUpdateRequests.map(
-      async req => this._updateTableAsync(req, isRateLimitedUpdatingRequired)
+      async req => this._updateTableInternalAsync(req, isRateLimitedUpdatingRequired)
     ));
   }
 
+  async _updateTableInternalAsync(tableUpdateRequest: UpdateTableRequest,
+    isRateLimitedUpdatingRequired: boolean): Promise<void> {
+    invariant(tableUpdateRequest != null, 'The argument \'tableUpdateRequest\' was null');
+    invariant(typeof isRateLimitedUpdatingRequired === 'boolean',
+      'The argument \'isRateLimitedUpdatingRequired\' was not a boolean');
+
+    log(`Updating table '${tableUpdateRequest.TableName}'`);
+    if (isRateLimitedUpdatingRequired) {
+      await this._rateLimitedTableUpdater.updateTableAsync(tableUpdateRequest);
+    } else {
+      await this._updateTableAsync(tableUpdateRequest);
+    }
+    log(`Updated table '${tableUpdateRequest.TableName}'`);
+  }
   /*
   _logMetrics(tableDetails: Object[]) {
     invariant(tableDetails instanceof Array,
@@ -171,4 +164,10 @@ export default class DynamoDBAutoscaler {
     }));
   }
   */
+
+  _filterNulls<T>(items: Array<?T>): Array<T> {
+    invariant(items instanceof Array, 'The argument \'items\' was not an array');
+    let nonNullItems = items.filter(item => item != null);
+    return ((nonNullItems: any[]): T[]);
+  }
 }

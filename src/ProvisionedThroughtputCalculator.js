@@ -291,11 +291,11 @@ export default class ProvisionedThroughtputCalculator {
       this._isAfterLastAdjustmentGracePeriod(data.ProvisionedThroughput.LastIncreaseDateTime,
         adjustmentContext.CapacityAdjustmentConfig.When.AfterLastIncrementMinutes);
 
-    let isReadDecrementAllowed = adjustmentContext.AdjustmentType === 'decrement' ?
+    let isDecrementAllowed = adjustmentContext.AdjustmentType === 'decrement' ?
       RateLimitedDecrement.isDecrementAllowed(data, adjustmentContext, ac => ThroughputUtils.getAdjustedCapacityUnits(ac)) :
       true;
 
-    let isAdjustmentAllowed = isAfterLastDecreaseGracePeriod && isAfterLastIncreaseGracePeriod && isReadDecrementAllowed;
+    let isAdjustmentAllowed = isAfterLastDecreaseGracePeriod && isAfterLastIncreaseGracePeriod && isDecrementAllowed;
 
     // Package up the configuration and the results so that we can produce
     // some effective logs

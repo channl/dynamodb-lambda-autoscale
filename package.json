@@ -16,27 +16,64 @@
     "src",
     "README.md"
   ],
-  "options": {
-    "mocha": "--require resources/mocha-bootload src/**/__tests__/**/*.js"
-  },
   "scripts": {
-    "test": "npm run lint && npm run check",
-    "lint": "eslint src",
     "flowcheck": "flow check",
-    "flowcoverage": "flow coverage"
+    "flowcoverage": "flow coverage",
+    "build": "node scripts/build.js",
+    "test": "node scripts/test.js --env=jsdom"
   },
   "dependencies": {
-    "async": "^2.0.0",
+    "async": "^2.4.1",
     "aws-sdk": "2.22.0",
     "invariant": "^2.2.1",
     "measured": "^1.1.0",
     "warning": "^3.0.0"
   },
   "devDependencies": {
+    "babel-core": "6.24.1",
     "babel-eslint": "^7.2.3",
+    "babel-jest": "20.0.3",
+    "babel-loader": "7.0.0",
+    "babel-preset-lambda-app": "^0.2.1",
+    "babel-runtime": "^6.20.0",
+    "chalk": "1.1.3",
     "eslint": "^3.19.0",
-    "eslint-plugin-babel": "^4.1.1",
-    "flow-bin": "^0.46.0",
-    "jest": "18.1.0"
+    "eslint-config-lambda-app": "^0.1.1",
+    "eslint-loader": "1.7.1",
+    "eslint-plugin-flowtype": "2.34.0",
+    "eslint-plugin-import": "2.3.0",
+    "extract-text-webpack-plugin": "2.1.0",
+    "file-loader": "0.11.1",
+    "flow-bin": "^0.47.0",
+    "fs-extra": "3.0.1",
+    "jest": "20.0.4",
+    "lambda-dev-utils": "^0.2.0",
+    "object-assign": "4.1.1",
+    "promise": "7.1.1",
+    "style-loader": "0.18.1",
+    "url-loader": "0.5.8",
+    "webpack": "2.6.1",
+    "whatwg-fetch": "2.0.3"
+  },
+  "jest": {
+    "testPathIgnorePatterns": [
+      "<rootDir>[/\\\\](build|docs|node_modules|scripts)[/\\\\]"
+    ],
+    "testEnvironment": "node",
+    "transform": {
+      "^.+\\.(js)$": "<rootDir>/node_modules/babel-jest"
+    },
+    "transformIgnorePatterns": [
+      "[/\\\\]node_modules[/\\\\].+\\.(js)$"
+    ],
+    "moduleNameMapper": {}
+  },
+  "babel": {
+    "presets": [
+      "lambda-app"
+    ]
+  },
+  "eslintConfig": {
+    "extends": "lambda-app"
   }
 }

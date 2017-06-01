@@ -453,6 +453,8 @@ declare module 'aws-sdk' {
 
   // CloudWatch
   declare class CloudWatch {
+    constructor(cloudWatchOptions: CloudWatchOptions): void;
+
     getMetricStatistics(params: ?GetMetricStatisticsRequest, callback: ?(err: ?Error,
       data: GetMetricStatisticsResponse) => void): PromiseRequest<GetMetricStatisticsResponse>;
   }
