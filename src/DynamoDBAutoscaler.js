@@ -86,7 +86,7 @@ export default class DynamoDBAutoscaler {
   }
 
   async _updateTablesAsync(tableUpdateRequests: UpdateTableRequest[]): Promise<void> {
-    invariant(tableUpdateRequests instanceof Array, 'The argument tableUpdateRequests was not an array');
+    invariant(Array.isArray(tableUpdateRequests), 'The argument tableUpdateRequests was not an array');
 
     // If we are updating more than 10 tables in a single run
     // then we must wait until each one has been completed to
@@ -117,8 +117,7 @@ export default class DynamoDBAutoscaler {
   }
   /*
   _logMetrics(tableDetails: Object[]) {
-    invariant(tableDetails instanceof Array,
-      'The argument \'tableDetails\' was not an array');
+    invariant(Array.isArray(tableDetails), 'The argument \'tableDetails\' was not an array');
 
     // Log stats
     let st = new Stats(stats);
@@ -177,7 +176,7 @@ export default class DynamoDBAutoscaler {
   */
 
   _filterNulls<T>(items: Array<?T>): Array<T> {
-    invariant(items instanceof Array, 'The argument items was not an array');
+    invariant(Array.isArray(items), 'The argument items was not an array');
     let nonNullItems = items.filter(item => item != null);
     return ((nonNullItems: any[]): T[]);
   }

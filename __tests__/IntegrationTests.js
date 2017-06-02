@@ -53,7 +53,7 @@ test('DynamoDBAutoscaler', async () => {
     // eslint-disable-next-line
     async (params: GetMetricStatisticsRequest) => {
       return consumedThroughput;
-    },
+    }
   );
 
   let pr = new ProvisionedThroughtputCalculator();
@@ -69,7 +69,7 @@ test('DynamoDBAutoscaler', async () => {
   // eslint-disable-next-line
   let getTableUpdateAsyncFunc = async (
     tableDescription: TableDescription,
-    tableConsumedCapacityDescription: TableConsumedCapacityDescription,
+    tableConsumedCapacityDescription: TableConsumedCapacityDescription
   ) => {
     return await pr.getTableUpdateAsync(tableDescription, tableConsumedCapacityDescription, provisionerConfig);
   };
@@ -89,8 +89,10 @@ test('DynamoDBAutoscaler', async () => {
     getTableConsumedCapacityAsyncFunc,
     getTableUpdateAsyncFunc,
     describeTableAsync,
-    updateTableAsync,
+    updateTableAsync
   );
 
   expect(autoscaler != null).toEqual(true);
+
+  await autoscaler.runAsync();
 });

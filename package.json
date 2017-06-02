@@ -40,6 +40,7 @@
     "eslint": "^3.19.0",
     "eslint-config-lambda-app": "^0.1.1",
     "eslint-loader": "1.7.1",
+    "eslint-plugin-babel": "^4.1.1",
     "eslint-plugin-flowtype": "2.34.0",
     "eslint-plugin-import": "2.3.0",
     "extract-text-webpack-plugin": "2.1.0",
@@ -47,6 +48,7 @@
     "flow-bin": "^0.47.0",
     "fs-extra": "3.0.1",
     "jest": "20.0.4",
+    "jest-cli": "^20.0.4",
     "lambda-dev-utils": "^0.2.0",
     "object-assign": "4.1.1",
     "promise": "7.1.1",
@@ -61,7 +63,7 @@
     ],
     "testEnvironment": "node",
     "transform": {
-      "^.+\\.(js)$": "<rootDir>/node_modules/babel-jest"
+      "^.+\\.(js)$": "babel-jest"
     },
     "transformIgnorePatterns": [
       "[/\\\\]node_modules[/\\\\].+\\.(js)$"
