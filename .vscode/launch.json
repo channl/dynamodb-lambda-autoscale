@@ -29,7 +29,7 @@
             "env": {
                 "NODE_ENV": "test"
             },
-            "console": "integratedTerminal",
+            "console": "internalConsole",
             "sourceMaps": true,
             "outFiles": []
         }

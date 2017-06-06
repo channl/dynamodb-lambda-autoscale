@@ -5,15 +5,22 @@ import invariant from 'invariant';
 import CostEstimation from './utils/CostEstimation';
 import ThroughputUtils from './utils/ThroughputUtils';
 import RateLimitedTableUpdater from './utils/RateLimitedTableUpdater';
-import type { UpdateTableRequest, UpdateTableResponse, DescribeTableRequest, DescribeTableResponse } from 'aws-sdk';
+import ConsumedThroughputCalculator from './ConsumedThroughputCalculator';
+import ProvisionedThroughtputCalculator from './ProvisionedThroughtputCalculator';
+import DynamoDB from './aws/DynamoDB';
+import CloudWatch from './aws/CloudWatch';
 import type {
-  GetTableNamesAsyncFunc,
-  GetTableConsumedCapacityAsyncFunc,
-  GetTableUpdateAsyncFunc,
-} from './flow/FlowTypes';
+  DynamoDBConfig,
+  CloudWatchOptions,
+  UpdateTableRequest,
+  UpdateTableResponse,
+  DescribeTableRequest,
+  DescribeTableResponse,
+} from 'aws-sdk';
+import type { GetTableConsumedCapacityAsyncFunc, GetTableUpdateAsyncFunc, ProvisionerConfig } from './flow/FlowTypes';
 
 export default class DynamoDBAutoscaler {
-  _getTableNamesAsyncFunc: GetTableNamesAsyncFunc;
+  _getTableNamesAsyncFunc: () => Promise<string[]>;
   _getTableConsumedCapacityAsyncFunc: GetTableConsumedCapacityAsyncFunc;
   _getTableUpdateAsyncFunc: GetTableUpdateAsyncFunc;
   _describeTableAsync: (params: DescribeTableRequest) => Promise<DescribeTableResponse>;
@@ -21,7 +28,7 @@ export default class DynamoDBAutoscaler {
   _rateLimitedTableUpdater: RateLimitedTableUpdater;
 
   constructor(
-    getTableNamesAsyncFunc: GetTableNamesAsyncFunc,
+    getTableNamesAsyncFunc: () => Promise<string[]>,
     getTableConsumedCapacityAsyncFunc: GetTableConsumedCapacityAsyncFunc,
     getTableUpdateAsyncFunc: GetTableUpdateAsyncFunc,
     describeTableAsync: (params: DescribeTableRequest) => Promise<DescribeTableResponse>,
@@ -33,6 +40,76 @@ export default class DynamoDBAutoscaler {
     this._describeTableAsync = describeTableAsync;
     this._updateTableAsync = updateTableAsync;
     this._rateLimitedTableUpdater = new RateLimitedTableUpdater(describeTableAsync, updateTableAsync);
+  }
+
+  static create(
+    dbConfig: DynamoDBConfig,
+    cwConfig: CloudWatchOptions,
+    provConfig: ProvisionerConfig
+  ): DynamoDBAutoscaler {
+    let db = new DynamoDB(dbConfig);
+    let cw = new CloudWatch(cwConfig);
+    let ctc = new ConsumedThroughputCalculator(cw.getMetricStatisticsAsync);
+    let ptc = new ProvisionedThroughtputCalculator();
+    return new DynamoDBAutoscaler(
+      db.listAllTableNamesAsync,
+      ctc.describeTableConsumedCapacityAsync,
+      (td, tcc) => ptc.getTableUpdateAsync(td, tcc, provConfig),
+      db.describeTableAsync,
+      db.updateTableAsync
+    );
+  }
+
+  useTableNamesAsyncFunc(func: () => Promise<string[]>): DynamoDBAutoscaler {
+    return new DynamoDBAutoscaler(
+      func,
+      this._getTableConsumedCapacityAsyncFunc,
+      this._getTableUpdateAsyncFunc,
+      this._describeTableAsync,
+      this._updateTableAsync
+    );
+  }
+
+  useTableConsumedCapacityAsyncFunc(func: GetTableConsumedCapacityAsyncFunc): DynamoDBAutoscaler {
+    return new DynamoDBAutoscaler(
+      this._getTableNamesAsyncFunc,
+      func,
+      this._getTableUpdateAsyncFunc,
+      this._describeTableAsync,
+      this._updateTableAsync
+    );
+  }
+
+  useTableUpdateAsyncFunc(func: GetTableUpdateAsyncFunc): DynamoDBAutoscaler {
+    return new DynamoDBAutoscaler(
+      this._getTableNamesAsyncFunc,
+      this._getTableConsumedCapacityAsyncFunc,
+      func,
+      this._describeTableAsync,
+      this._updateTableAsync
+    );
+  }
+
+  useDescribeTableAsyncFunc(
+    func: (params: DescribeTableRequest) => Promise<DescribeTableResponse>
+  ): DynamoDBAutoscaler {
+    return new DynamoDBAutoscaler(
+      this._getTableNamesAsyncFunc,
+      this._getTableConsumedCapacityAsyncFunc,
+      this._getTableUpdateAsyncFunc,
+      func,
+      this._updateTableAsync
+    );
+  }
+
+  useUpdateTableAsyncFunc(func: (params: UpdateTableRequest) => Promise<UpdateTableResponse>): DynamoDBAutoscaler {
+    return new DynamoDBAutoscaler(
+      this._getTableNamesAsyncFunc,
+      this._getTableConsumedCapacityAsyncFunc,
+      this._getTableUpdateAsyncFunc,
+      this._describeTableAsync,
+      func
+    );
   }
 
   // $FlowIgnore

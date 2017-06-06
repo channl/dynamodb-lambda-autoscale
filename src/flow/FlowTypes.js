@@ -1,15 +1,13 @@
 /* @flow */
 import type { ProvisionedThroughput, Throughput, UpdateTableRequest, TableDescription } from 'aws-sdk';
 
-export type GetTableNamesAsyncFunc = () => Promise<string[]>;
-
 export type GetTableConsumedCapacityAsyncFunc = (
-  tableDescription: TableDescription,
+  tableDescription: TableDescription
 ) => Promise<TableConsumedCapacityDescription>;
 
 export type GetTableUpdateAsyncFunc = (
   tableDescription: TableDescription,
-  tableConsumedCapacityDescription: TableConsumedCapacityDescription,
+  tableConsumedCapacityDescription: TableConsumedCapacityDescription
 ) => Promise<?UpdateTableRequest>;
 
 export type TableDetails = {
