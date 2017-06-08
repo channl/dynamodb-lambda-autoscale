@@ -1,5 +1,5 @@
 /* @flow */
-import invariant from 'invariant';
+import { invariant } from '../Global';
 
 export default class Delay {
 

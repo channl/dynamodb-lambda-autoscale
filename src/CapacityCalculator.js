@@ -1,5 +1,5 @@
 /* @flow */
-import invariant from 'invariant';
+import { invariant } from './Global';
 import { Region } from './configuration/Region';
 import CapacityCalculatorBase from './capacity/CapacityCalculatorBase';
 import type { GetMetricStatisticsResponse } from 'aws-sdk';

@@ -1,5 +1,5 @@
 /* @flow */
-import invariant from 'invariant';
+import { invariant } from '../Global';
 import type {
   TableProvisionedAndConsumedThroughput,
   AdjustmentContext

@@ -1,6 +1,6 @@
 {
   "name": "dynamodb-lambda-autoscale",
-  "version": "0.4.0",
+  "version": "0.3.0",
   "description": "Autoscale DynamoDB provisioned capacity using AWS Lambda",
   "contributors": [
     "Thomas Mitchell <channlappio@gmail.com>"
@@ -15,17 +15,40 @@
     "mocha": "--require resources/mocha-bootload src/**/__tests__/**/*.js"
   },
   "scripts": {
+    "localtest": "babel-node ./scripts/localtest.js",
     "test": "npm run lint && npm run check",
     "lint": "eslint src",
-    "check": "flow check"
+    "check": "flow check",
+    "build": "gulp dist",
+    "start": "node ./scripts/start.js",
+    "debug": "node --inspect --debug-brk ./scripts/start.js"
   },
-  "dependencies": {
+  "dependencies": {},
+  "devDependencies": {
     "async": "^2.0.0",
     "aws-sdk": "2.6.9",
+    "babel": "^6.5.2",
+    "babel-cli": "^6.7.7",
+    "babel-eslint": "^6.0.4",
+    "babel-loader": "^6.2.4",
+    "babel-polyfill": "^6.7.4",
+    "babel-preset-react-native": "^1.5.7",
+    "del": "^2.2.0",
+    "dotenv": "^2.0.0",
+    "eslint": "^2.9.0",
+    "eslint-plugin-babel": "^3.2.0",
+    "gulp": "^3.9.1",
+    "gulp-install": "^0.6.0",
+    "gulp-rename": "^1.2.2",
+    "gulp-uglify": "^1.5.3",
+    "gulp-zip": "^3.2.0",
     "invariant": "^2.2.1",
+    "json-loader": "^0.5.4",
     "measured": "^1.1.0",
-    "warning": "^2.1.0"
-  },
-  "devDependencies": {
+    "run-sequence": "^1.1.5",
+    "stats-webpack-plugin": "^0.3.1",
+    "warning": "^2.1.0",
+    "webpack": "^1.13.0",
+    "webpack-stream": "^3.2.0"
   }
 }

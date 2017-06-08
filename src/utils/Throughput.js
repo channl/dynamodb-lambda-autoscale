@@ -1,10 +1,10 @@
 /* @flow */
 /* eslint-disable max-len */
-import invariant from 'invariant';
-import type { TableDescription, Throughput } from 'aws-sdk';
+import { json, warning, invariant } from '../Global';
+import type { TableDescription, DynamoDBProvisionedThroughput } from 'aws-sdk';
 import type { TableProvisionedAndConsumedThroughput, AdjustmentContext } from '../flow/FlowTypes';
 
-export default class ThroughputUtils {
+export default class Throughput {
 
   static getReadCapacityUtilisationPercent(data: TableProvisionedAndConsumedThroughput) {
     invariant(data != null, 'Parameter \'data\' is not set');
@@ -98,25 +98,34 @@ export default class ThroughputUtils {
   }
 
   static getTotalTableProvisionedThroughput(params: TableDescription)
-    : Throughput {
-    invariant(typeof params !== 'undefined', 'Parameter \'params\' is not set');
+    : DynamoDBProvisionedThroughput {
+    try {
+      invariant(typeof params !== 'undefined', 'Parameter \'params\' is not set');
 
-    let ReadCapacityUnits = params.ProvisionedThroughput.ReadCapacityUnits;
-    let WriteCapacityUnits = params.ProvisionedThroughput.WriteCapacityUnits;
+      let ReadCapacityUnits = params.ProvisionedThroughput.ReadCapacityUnits;
+      let WriteCapacityUnits = params.ProvisionedThroughput.WriteCapacityUnits;
 
-    if (params.GlobalSecondaryIndexes) {
-      ReadCapacityUnits += params.GlobalSecondaryIndexes
-        .reduce((prev, curr) =>
-          prev + curr.ProvisionedThroughput.ReadCapacityUnits, 0);
+      if (params.GlobalSecondaryIndexes) {
+        ReadCapacityUnits += params.GlobalSecondaryIndexes
+          .reduce((prev, curr) =>
+            prev + curr.ProvisionedThroughput.ReadCapacityUnits, 0);
 
-      WriteCapacityUnits += params.GlobalSecondaryIndexes
-        .reduce((prev, curr) =>
-          prev + curr.ProvisionedThroughput.WriteCapacityUnits, 0);
+        WriteCapacityUnits += params.GlobalSecondaryIndexes
+          .reduce((prev, curr) =>
+            prev + curr.ProvisionedThroughput.WriteCapacityUnits, 0);
+      }
+
+      return {
+        ReadCapacityUnits,
+        WriteCapacityUnits
+      };
+    } catch (ex) {
+      warning(JSON.stringify({
+        class: 'Throughput',
+        function: 'getTotalTableProvisionedThroughput',
+        params
+      }, null, json.padding));
+      throw ex;
     }
-
-    return {
-      ReadCapacityUnits,
-      WriteCapacityUnits
-    };
   }
 }

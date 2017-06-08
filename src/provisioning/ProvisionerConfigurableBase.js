@@ -1,5 +1,5 @@
 /* @flow */
-import invariant from 'invariant';
+import { json, warning, invariant } from '../Global';
 import ProvisionerBase from '../provisioning/ProvisionerBase';
 import type {
   TableDescription,
@@ -62,118 +62,147 @@ export default class ProvisionerConfigurableBase extends ProvisionerBase {
   async getTableUpdateAsync(tableDescription: TableDescription,
     tableConsumedCapacityDescription: TableConsumedCapacityDescription) :
     Promise<?UpdateTableRequest> {
-    invariant(tableDescription != null, 'Parameter \'tableDescription\' is not set');
-    invariant(tableConsumedCapacityDescription != null,
-      'Parameter \'tableConsumedCapacityDescription\' is not set');
+    try {
+      invariant(tableDescription != null, 'Parameter \'tableDescription\' is not set');
+      invariant(tableConsumedCapacityDescription != null,
+        'Parameter \'tableConsumedCapacityDescription\' is not set');
 
-    let tableData = {
-      TableName: tableDescription.TableName,
-      ProvisionedThroughput: tableDescription.ProvisionedThroughput,
-      ConsumedThroughput: tableConsumedCapacityDescription.ConsumedThroughput,
-      ThrottledEvents: tableConsumedCapacityDescription.ThrottledEvents
-    };
+      let tableData = {
+        TableName: tableDescription.TableName,
+        ProvisionedThroughput: tableDescription.ProvisionedThroughput,
+        ConsumedThroughput: tableConsumedCapacityDescription.ConsumedThroughput,
+        ThrottledEvents: tableConsumedCapacityDescription.ThrottledEvents
+      };
 
-    let provisionedThroughput = this.getUpdatedProvisionedThroughput(tableData);
+      let provisionedThroughput = this.getUpdatedProvisionedThroughput(tableData);
 
-    let gsis = tableDescription.GlobalSecondaryIndexes || [];
-    let globalSecondaryIndexUpdates = gsis
-      // $FlowIgnore
-      .map(gsi => this.getGlobalSecondaryIndexUpdate(
-        tableDescription, tableConsumedCapacityDescription, gsi))
-      .filter(i => i !== null);
+      let gsis = tableDescription.GlobalSecondaryIndexes || [];
+      let globalSecondaryIndexUpdates = gsis
+        // $FlowIgnore
+        .map(gsi => this.getGlobalSecondaryIndexUpdate(
+          tableDescription, tableConsumedCapacityDescription, gsi))
+        .filter(i => i !== null);
 
-    // eslint-disable-next-line eqeqeq
-    if (!provisionedThroughput && (globalSecondaryIndexUpdates == null ||
-      globalSecondaryIndexUpdates.length === 0)) {
-      return null;
+      // eslint-disable-next-line eqeqeq
+      if (!provisionedThroughput && (globalSecondaryIndexUpdates == null ||
+        globalSecondaryIndexUpdates.length === 0)) {
+        return null;
+      }
+
+      let result: UpdateTableRequest = {
+        TableName: tableDescription.TableName
+      };
+
+      if (provisionedThroughput) {
+        result.ProvisionedThroughput = provisionedThroughput;
+      }
+
+      if (globalSecondaryIndexUpdates && globalSecondaryIndexUpdates.length > 0) {
+        result.GlobalSecondaryIndexUpdates = globalSecondaryIndexUpdates;
+      }
+
+      return result;
+    } catch (e) {
+      warning(JSON.stringify({
+        class: 'ConfigurableProvisioner',
+        function: 'getTableUpdate',
+        tableDescription,
+        tableConsumedCapacityDescription
+      }, null, json.padding));
+      throw e;
     }
-
-    let result: UpdateTableRequest = {
-      TableName: tableDescription.TableName
-    };
-
-    if (provisionedThroughput) {
-      result.ProvisionedThroughput = provisionedThroughput;
-    }
-
-    if (globalSecondaryIndexUpdates && globalSecondaryIndexUpdates.length > 0) {
-      result.GlobalSecondaryIndexUpdates = globalSecondaryIndexUpdates;
-    }
-
-    return result;
   }
 
   getUpdatedProvisionedThroughput(params: TableProvisionedAndConsumedThroughput)
     : ?Throughput {
-    invariant(params != null, 'Parameter \'params\' is not set');
+    try {
+      invariant(params != null, 'Parameter \'params\' is not set');
 
-    let newProvisionedThroughput = {
-      ReadCapacityUnits: params.ProvisionedThroughput.ReadCapacityUnits,
-      WriteCapacityUnits: params.ProvisionedThroughput.WriteCapacityUnits
-    };
+      let newProvisionedThroughput = {
+        ReadCapacityUnits: params.ProvisionedThroughput.ReadCapacityUnits,
+        WriteCapacityUnits: params.ProvisionedThroughput.WriteCapacityUnits
+      };
 
-    // Adjust read capacity
-    if (this.isReadCapacityIncrementRequired(params)) {
-      newProvisionedThroughput.ReadCapacityUnits = this
-        .calculateIncrementedReadCapacityValue(params);
+      // Adjust read capacity
+      if (this.isReadCapacityIncrementRequired(params)) {
+        newProvisionedThroughput.ReadCapacityUnits = this
+          .calculateIncrementedReadCapacityValue(params);
 
-    } else if (this.isReadCapacityDecrementRequired(params)) {
-      newProvisionedThroughput.ReadCapacityUnits = this
-        .calculateDecrementedReadCapacityValue(params);
+      } else if (this.isReadCapacityDecrementRequired(params)) {
+        newProvisionedThroughput.ReadCapacityUnits = this
+          .calculateDecrementedReadCapacityValue(params);
+      }
+
+      // Adjust write capacity
+      if (this.isWriteCapacityIncrementRequired(params)) {
+        newProvisionedThroughput.WriteCapacityUnits = this
+          .calculateIncrementedWriteCapacityValue(params);
+
+      } else if (this.isWriteCapacityDecrementRequired(params)) {
+        newProvisionedThroughput.WriteCapacityUnits = this
+          .calculateDecrementedWriteCapacityValue(params);
+      }
+
+      if (newProvisionedThroughput.ReadCapacityUnits ===
+        params.ProvisionedThroughput.ReadCapacityUnits &&
+        newProvisionedThroughput.WriteCapacityUnits ===
+        params.ProvisionedThroughput.WriteCapacityUnits) {
+        return null;
+      }
+
+      return newProvisionedThroughput;
+    } catch (e) {
+      warning(JSON.stringify({
+        class: 'ConfigurableProvisioner',
+        function: 'getUpdatedProvisionedThroughput', params
+      }, null, json.padding));
+      throw e;
     }
-
-    // Adjust write capacity
-    if (this.isWriteCapacityIncrementRequired(params)) {
-      newProvisionedThroughput.WriteCapacityUnits = this
-        .calculateIncrementedWriteCapacityValue(params);
-
-    } else if (this.isWriteCapacityDecrementRequired(params)) {
-      newProvisionedThroughput.WriteCapacityUnits = this
-        .calculateDecrementedWriteCapacityValue(params);
-    }
-
-    if (newProvisionedThroughput.ReadCapacityUnits ===
-      params.ProvisionedThroughput.ReadCapacityUnits &&
-      newProvisionedThroughput.WriteCapacityUnits ===
-      params.ProvisionedThroughput.WriteCapacityUnits) {
-      return null;
-    }
-
-    return newProvisionedThroughput;
   }
 
   getGlobalSecondaryIndexUpdate(
     tableDescription: TableDescription,
     tableConsumedCapacityDescription: TableConsumedCapacityDescription,
     gsi: GlobalSecondaryIndex): ?GlobalSecondaryIndexUpdate {
-    invariant(tableDescription != null, 'Parameter \'tableDescription\' is not set');
-    invariant(tableConsumedCapacityDescription != null,
-      'Parameter \'tableConsumedCapacityDescription\' is not set');
-    invariant(gsi != null, 'Parameter \'gsi\' is not set');
+    try {
+      invariant(tableDescription != null, 'Parameter \'tableDescription\' is not set');
+      invariant(tableConsumedCapacityDescription != null,
+        'Parameter \'tableConsumedCapacityDescription\' is not set');
+      invariant(gsi != null, 'Parameter \'gsi\' is not set');
 
-    let gsicc = tableConsumedCapacityDescription
-      .GlobalSecondaryIndexes
-      .find(i => i.IndexName === gsi.IndexName);
+      let gsicc = tableConsumedCapacityDescription
+        .GlobalSecondaryIndexes
+        .find(i => i.IndexName === gsi.IndexName);
 
-    invariant(gsicc != null, 'Specified GSI could not be found');
-    let provisionedThroughput = this.getUpdatedProvisionedThroughput({
-      TableName: tableDescription.TableName,
-      IndexName: gsicc.IndexName,
-      ProvisionedThroughput: gsi.ProvisionedThroughput,
-      ConsumedThroughput: gsicc.ConsumedThroughput,
-      ThrottledEvents: gsicc.ThrottledEvents
-    });
+      invariant(gsicc != null, 'Specified GSI could not be found');
+      let provisionedThroughput = this.getUpdatedProvisionedThroughput({
+        TableName: tableDescription.TableName,
+        IndexName: gsicc.IndexName,
+        ProvisionedThroughput: gsi.ProvisionedThroughput,
+        ConsumedThroughput: gsicc.ConsumedThroughput,
+        ThrottledEvents: gsicc.ThrottledEvents
+      });
 
-    // eslint-disable-next-line eqeqeq
-    if (provisionedThroughput == null) {
-      return null;
-    }
-
-    return {
-      Update: {
-        IndexName: gsi.IndexName,
-        ProvisionedThroughput: provisionedThroughput
+      // eslint-disable-next-line eqeqeq
+      if (provisionedThroughput == null) {
+        return null;
       }
-     };
+
+      return {
+        Update: {
+          IndexName: gsi.IndexName,
+          ProvisionedThroughput: provisionedThroughput
+        }
+      };
+    } catch (e) {
+      warning(JSON.stringify({
+        class: 'ConfigurableProvisioner',
+        function: 'getGlobalSecondaryIndexUpdate',
+        tableDescription,
+        tableConsumedCapacityDescription,
+        gsi
+      }, null, json.padding));
+      throw e;
+    }
   }
 }

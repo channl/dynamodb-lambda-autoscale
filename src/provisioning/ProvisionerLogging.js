@@ -1,9 +1,9 @@
 /* @flow */
+import { log } from '../Global';
 import type {
   AdjustmentContext,
   AdjustmentData,
 } from '../flow/FlowTypes';
-import log from '../logging/log';
 
 export default class ConfigLogging {
   static isAdjustmentRequiredLog(

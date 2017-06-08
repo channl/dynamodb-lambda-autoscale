@@ -1,12 +1,12 @@
 /* @flow */
 /* eslint-disable max-len */
-import invariant from 'invariant';
 import ProvisionerConfigurableBase from './provisioning/ProvisionerConfigurableBase';
 import RateLimitedDecrement from './utils/RateLimitedDecrement';
-import ThroughputUtils from './utils/ThroughputUtils';
+import Throughput from './utils/Throughput';
 import ProvisionerLogging from './provisioning/ProvisionerLogging';
 import { Region } from './configuration/Region';
 import DefaultProvisioner from './configuration/DefaultProvisioner';
+import { invariant } from './Global';
 import type { TableProvisionedAndConsumedThroughput, ProvisionerConfig, AdjustmentContext } from './flow/FlowTypes';
 
 export default class Provisioner extends ProvisionerConfigurableBase {
@@ -56,7 +56,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
 
     let config = this.getTableConfig(data);
     let adjustmentContext = this.getReadCapacityIncrementAdjustmentContext(data, config);
-    return ThroughputUtils.getAdjustedCapacityUnits(adjustmentContext);
+    return Throughput.getAdjustedCapacityUnits(adjustmentContext);
   }
 
   isReadCapacityDecrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
@@ -72,7 +72,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
 
     let config = this.getTableConfig(data);
     let adjustmentContext = this.getReadCapacityDecrementAdjustmentContext(data, config);
-    return ThroughputUtils.getAdjustedCapacityUnits(adjustmentContext);
+    return Throughput.getAdjustedCapacityUnits(adjustmentContext);
   }
 
   isWriteCapacityIncrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
@@ -88,7 +88,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
 
     let config = this.getTableConfig(data);
     let adjustmentContext = this.getWriteCapacityIncrementAdjustmentContext(data, config);
-    return ThroughputUtils.getAdjustedCapacityUnits(adjustmentContext);
+    return Throughput.getAdjustedCapacityUnits(adjustmentContext);
   }
 
   isWriteCapacityDecrementRequired(data: TableProvisionedAndConsumedThroughput): boolean {
@@ -104,7 +104,7 @@ export default class Provisioner extends ProvisionerConfigurableBase {
 
     let config = this.getTableConfig(data);
     let adjustmentContext = this.getWriteCapacityDecrementAdjustmentContext(data, config);
-    return ThroughputUtils.getAdjustedCapacityUnits(adjustmentContext);
+    return Throughput.getAdjustedCapacityUnits(adjustmentContext);
   }
 
   getReadCapacityIncrementAdjustmentContext(data: TableProvisionedAndConsumedThroughput, config: ProvisionerConfig): AdjustmentContext {
